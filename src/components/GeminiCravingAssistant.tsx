@@ -22,13 +22,14 @@ export const GeminiCravingAssistant: React.FC = () => {
 
   return (
     <>
-      {/* Floating Gemini AI Trigger Pill */}
+      {/* Floating Gemini AI Trigger Button (ALIVE with Ring Pulse & Sweeping Glow) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full bg-neon-gradient text-white font-extrabold text-xs shadow-neon hover:scale-105 transition-all animate-pulse"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-neon-gradient text-white font-extrabold text-xs shadow-neon ring-2 ring-primary/50 ring-offset-2 ring-offset-black animate-pulse hover:scale-110 active:scale-95 transition-all duration-300 group overflow-hidden"
       >
-        <Sparkles className="w-4 h-4" />
+        <Sparkles className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
         <span>Ask Gemini AI Concierge</span>
+        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
       </button>
 
       {/* Gemini AI Modal Window */}
