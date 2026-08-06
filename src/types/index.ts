@@ -6,18 +6,22 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
-  name?: string; // computed full name
+  name?: string;
   email: string;
   image?: string;
   role: Role;
   createdAt: string;
 }
 
-export interface Rating {
+export interface Review {
   id: string;
   userId: string;
+  userName?: string;
+  userAvatar?: string;
   spotId: string;
   rating: number; // 1 to 5
+  text?: string;
+  photos?: string[];
   createdAt: string;
 }
 
@@ -29,13 +33,16 @@ export interface Spot {
   category: string;
   description: string;
   coverImage: string;
+  phoneNumber?: string;
+  priceInfo?: string;
+  features?: string[];
   viewsToday: number;
   isFeatured: boolean;
   status: SpotStatus;
   createdAt: string;
-  rating?: number; // average rating
-  reviewsCount?: number; // total ratings count
-  ratingsList?: Rating[];
+  rating?: number;
+  reviewsCount?: number;
+  reviewsList?: Review[];
   location?: string;
 }
 
