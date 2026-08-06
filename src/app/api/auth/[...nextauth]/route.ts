@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
+import NextAuth from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-export async function GET(request: Request) {
-  return NextResponse.json({ message: "CRAVE2026 Auth API endpoint" });
-}
+const handler = NextAuth(authOptions);
 
-export async function POST(request: Request) {
-  return NextResponse.json({ message: "Auth authentication handler" });
-}
+export { handler as GET, handler as POST };

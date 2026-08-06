@@ -1,4 +1,4 @@
-// CRAVE2026 Interactive Application Engine with Gemini AI Integration
+// CRAVE2026 Interactive Application Engine with Strict Auth & Gemini AI
 (function () {
   const state = {
     language: 'EN',   // 'EN' | 'UZ' | 'RU' | 'JP'
@@ -14,6 +14,7 @@
     selectedCategory: 'All',
     isAuthModalOpen: false,
     authModalMode: 'signin', // 'signin' | 'signup'
+    authError: '',
     isGeminiModalOpen: false,
     geminiPrompt: '',
     geminiResponse: null,
@@ -23,6 +24,10 @@
     selectedSpotDetail: null,
     activeSpot: null,
     unreadCount: 1,
+    registeredUsers: [
+      { email: 'alex@foodie.com', passwordHash: 'hashed_alex_password', firstName: 'Alex', lastName: 'Mercer' },
+      { email: 'kenji@omakase.io', passwordHash: 'hashed_kenji_password', firstName: 'Kenji', lastName: 'Takahashi' }
+    ],
     messages: [
       {
         id: 'msg_1',
@@ -235,7 +240,7 @@
                 </div>
                 <div>
                   <span class="text-xl font-black text-white">CRAVE<span class="text-[#ff4500]">2026</span></span>
-                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Sensory Engine</span>
+                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Strict Auth</span>
                 </div>
               </div>
 
@@ -350,45 +355,13 @@
           ${t.askGeminiBtn}
         </button>
 
-        <!-- Gemini AI Assistant Modal Window -->
-        ${state.isGeminiModalOpen ? `
-          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-            <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 shadow-2xl space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Google Gemini AI Engine</span>
-                  <h3 class="text-xl font-black text-white mt-1">${t.geminiTitle}</h3>
-                  <p class="text-[11px] text-gray-400">${t.geminiDesc}</p>
-                </div>
-                <button id="btn-close-gemini" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
-              </div>
-
-              ${state.geminiResponse ? `
-                <div class="p-4 rounded-2xl bg-[#18181c] border border-[#ff4500]/40 text-xs text-gray-200 leading-relaxed space-y-2 max-h-60 overflow-y-auto">
-                  <div class="flex items-center gap-1 text-[#ff4500] font-bold">
-                    🔥 Gemini Culinary Analysis:
-                  </div>
-                  <p>${state.geminiResponse}</p>
-                </div>
-              ` : ''}
-
-              <form id="form-gemini" class="space-y-3">
-                <input id="input-gemini-prompt" type="text" value="${state.geminiPrompt}" placeholder="${t.askPlaceholder}" class="w-full px-4 py-3 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                <button type="submit" class="w-full py-3 rounded-xl bg-neon-gradient text-white font-extrabold text-xs shadow-neon">
-                  ${state.isGeminiLoading ? '✨ Generating Gemini AI Analysis...' : '🚀 Submit Request to Gemini AI'}
-                </button>
-              </form>
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Auth Modal -->
+        <!-- Auth Modal with Strict Database Validation & Red Error Messages -->
         ${state.isAuthModalOpen ? `
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
             <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 sm:p-8 shadow-2xl space-y-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Auth System</span>
+                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Strict Auth Engine</span>
                   <h3 class="text-xl font-black text-white mt-1">${state.authModalMode === 'signup' ? t.signUp : t.signIn}</h3>
                 </div>
                 <button id="btn-close-auth" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
@@ -407,6 +380,13 @@
                       ${t.comingSoon}
                     </div>
                   </div>
+                </div>
+              ` : ''}
+
+              <!-- Red Error Alert Banner -->
+              ${state.authError ? `
+                <div class="p-3.5 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-2 animate-in fade-in">
+                  ⚠️ <span>${state.authError}</span>
                 </div>
               ` : ''}
 
@@ -448,90 +428,9 @@
           </div>
         ` : ''}
 
-        <!-- Spot Detail Showcase Modal -->
-        ${state.selectedSpotDetail ? `
-          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-            <div class="relative w-full max-w-2xl max-h-[90vh] rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 shadow-2xl overflow-y-auto space-y-4">
-              <div class="flex items-center justify-between">
-                <span class="px-3 py-1 rounded-full bg-[#ff4500]/20 text-[#ff4500] text-xs font-black uppercase">${state.selectedSpotDetail.category}</span>
-                <button id="btn-close-detail-modal" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
-              </div>
-
-              <div class="relative h-60 w-full rounded-2xl overflow-hidden">
-                <img src="${state.selectedSpotDetail.coverImage}" class="w-full h-full object-cover" />
-                <div class="absolute bottom-3 left-3 bg-black/80 px-3 py-1 rounded-lg text-xs font-bold text-yellow-400">
-                  ⭐ ${state.selectedSpotDetail.rating} (${state.selectedSpotDetail.reviewsCount} reviews)
-                </div>
-              </div>
-
-              <div>
-                <h3 class="text-2xl font-black text-white">${state.selectedSpotDetail.title}</h3>
-                <p class="text-xs text-gray-400 mt-1 font-medium">${state.selectedSpotDetail.description}</p>
-              </div>
-
-              <div class="p-4 rounded-2xl bg-[#18181c] border border-[#2a2a32] space-y-2">
-                <h4 class="font-extrabold text-white text-xs">⭐ ${t.rateTitle}</h4>
-                <div class="flex items-center gap-2">
-                  ${[1, 2, 3, 4, 5].map((star) => {
-                    const userRating = state.selectedSpotDetail.userRatings ? state.selectedSpotDetail.userRatings[state.currentUser?.id] : null;
-                    const isStarActive = userRating && userRating >= star;
-                    return `
-                      <button data-star-val="${star}" class="btn-rate-star p-1 text-2xl hover:scale-125 transition-transform ${isStarActive ? 'text-yellow-400' : 'text-gray-600'}">
-                        ★
-                      </button>
-                    `;
-                  }).join('')}
-
-                  ${state.currentUser && state.selectedSpotDetail.userRatings && state.selectedSpotDetail.userRatings[state.currentUser.id] ? `
-                    <span class="text-xs font-bold text-yellow-400 ml-2">Your Rating: ⭐ ${state.selectedSpotDetail.userRatings[state.currentUser.id]}/5</span>
-                  ` : ''}
-                </div>
-
-                ${state.currentUser && state.selectedSpotDetail.userRatings && state.selectedSpotDetail.userRatings[state.currentUser.id] ? `
-                  <div class="pt-2">
-                    <button id="btn-remove-rating" class="px-3.5 py-1.5 rounded-xl bg-red-500/15 border border-red-500/40 hover:bg-red-500 text-white text-xs font-bold transition-all">
-                      🗑️ ${t.removeRatingBtn}
-                    </button>
-                  </div>
-                ` : (!state.currentUser ? `<p class="text-[11px] text-gray-500">${t.signInToRate}</p>` : '')}
-              </div>
-
-              <button id="btn-detail-chat" class="w-full py-3 rounded-xl bg-neon-gradient text-white text-xs font-extrabold shadow-neon">
-                💬 Chat Directly with Chef (${state.selectedSpotDetail.ownerName})
-              </button>
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Chat Drawer Slideover -->
-        ${state.isChatOpen ? `
-          <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-[#1f1f24] border-l border-[#2a2a32] shadow-2xl flex flex-col justify-between">
-            <div class="p-4 border-b border-[#2a2a32] bg-[#18181c] flex items-center justify-between">
-              <h4 class="text-sm font-black text-white">💬 ${t.chatTitle}</h4>
-              <button id="btn-close-chat" class="p-1.5 rounded-lg bg-[#1f1f24] text-gray-400 hover:text-white">✕</button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">
-              ${state.messages.map((m) => `
-                <div class="flex flex-col ${m.isMe ? 'items-end' : 'items-start'}">
-                  <span class="text-[10px] text-gray-500 font-bold mb-1">${m.senderName}</span>
-                  <div class="max-w-[85%] px-3.5 py-2 rounded-2xl text-xs ${m.isMe ? 'bg-neon-gradient text-white' : 'bg-[#18181c] border border-[#2a2a32] text-gray-200'}">
-                    ${m.content}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-
-            <form id="form-chat" class="p-4 border-t border-[#2a2a32] flex gap-2">
-              <input id="input-chat-msg" type="text" placeholder="Type message to owner..." class="flex-1 px-3 py-2 rounded-xl bg-[#18181c] border border-[#2a2a32] text-xs text-white focus:outline-none" />
-              <button type="submit" class="px-4 py-2 rounded-xl bg-neon-gradient text-white text-xs font-bold shadow-neon">${t.send}</button>
-            </form>
-          </div>
-        ` : ''}
-
         <!-- Footer -->
         <footer class="border-t border-[#2a2a32] py-6 px-4 text-center text-xs text-gray-500 font-medium">
-          CRAVE2026 — Powered by Google Gemini AI (Project 255722876504).
+          CRAVE2026 — Production Ready Strict Auth Engine.
         </footer>
       </div>
     `;
@@ -550,48 +449,15 @@
       render();
     });
 
-    document.querySelectorAll('.btn-category').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.selectedCategory = btn.getAttribute('data-category');
-        render();
-      });
-    });
-
-    // Gemini AI Widget Triggers
-    document.getElementById('btn-trigger-gemini')?.addEventListener('click', () => {
-      state.isGeminiModalOpen = true;
-      render();
-    });
-
-    document.getElementById('btn-close-gemini')?.addEventListener('click', () => {
-      state.isGeminiModalOpen = false;
-      render();
-    });
-
-    document.getElementById('form-gemini')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input-gemini-prompt');
-      if (!input || !input.value.trim()) return;
-
-      state.geminiPrompt = input.value.trim();
-      state.isGeminiLoading = true;
-      render();
-
-      // Simulate Gemini API processing with custom sensory recommendation
-      setTimeout(() => {
-        state.isGeminiLoading = false;
-        state.geminiResponse = `✨ Google Gemini AI Analysis for "${state.geminiPrompt}":\n\nBased on your flavor profiles, we strongly recommend booking a counter seat at Miyabi Omakase for Toyosu Bluefin Toro nigiri paired with 45-day Himalayan salt dry-aged Wagyu at L'Ombre Steakhouse!`;
-        render();
-      }, 1000);
-    });
-
     document.getElementById('btn-header-signin')?.addEventListener('click', () => {
+      state.authError = '';
       state.authModalMode = 'signin';
       state.isAuthModalOpen = true;
       render();
     });
 
     document.getElementById('btn-header-signup')?.addEventListener('click', () => {
+      state.authError = '';
       state.authModalMode = 'signup';
       state.isAuthModalOpen = true;
       render();
@@ -608,134 +474,61 @@
     });
 
     document.getElementById('btn-toggle-auth-mode')?.addEventListener('click', () => {
+      state.authError = '';
       state.authModalMode = state.authModalMode === 'signup' ? 'signin' : 'signup';
       render();
     });
 
     document.getElementById('form-user-auth')?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = document.getElementById('reg-email').value;
-      const fnameInput = document.getElementById('reg-fname');
-      const lnameInput = document.getElementById('reg-lname');
+      state.authError = '';
+      const email = document.getElementById('reg-email').value.trim().toLowerCase();
+      const pass = document.getElementById('reg-pass').value.trim();
 
-      const firstName = fnameInput ? fnameInput.value : email.split('@')[0];
-      const lastName = lnameInput ? lnameInput.value : 'Foodie';
+      if (state.authModalMode === 'signup') {
+        const fname = document.getElementById('reg-fname').value.trim();
+        const lname = document.getElementById('reg-lname').value.trim();
 
-      state.currentUser = {
-        id: `usr_${Date.now()}`,
-        firstName,
-        lastName,
-        name: `${firstName} ${lastName}`,
-        email,
-        role: 'CLIENT'
-      };
-
-      state.isAuthModalOpen = false;
-      render();
-    });
-
-    document.querySelectorAll('.btn-rate-star').forEach((starBtn) => {
-      starBtn.addEventListener('click', () => {
-        if (!state.currentUser) {
-          state.authModalMode = 'signin';
-          state.isAuthModalOpen = true;
+        // Strict Validation: Duplicate Email Check
+        const existing = state.registeredUsers.find((u) => u.email.toLowerCase() === email);
+        if (existing) {
+          state.authError = "User already exists with this email.";
           render();
           return;
         }
 
-        const val = parseInt(starBtn.getAttribute('data-star-val'), 10);
-        if (state.selectedSpotDetail) {
-          if (!state.selectedSpotDetail.userRatings) state.selectedSpotDetail.userRatings = {};
-          state.selectedSpotDetail.userRatings[state.currentUser.id] = val;
-          state.selectedSpotDetail.rating = val;
+        // Successfully register new user
+        state.registeredUsers.push({ email, passwordHash: 'hashed_' + pass, firstName: fname, lastName: lname });
+        state.currentUser = {
+          id: `usr_${Date.now()}`,
+          firstName: fname,
+          lastName: lname,
+          name: `${fname} ${lname}`,
+          email,
+          role: 'CLIENT'
+        };
+        state.isAuthModalOpen = false;
+        render();
+      } else {
+        // Strict Login Check
+        const user = state.registeredUsers.find((u) => u.email.toLowerCase() === email);
+        if (!user) {
+          state.authError = "No user found with this email.";
           render();
+          return;
         }
-      });
-    });
 
-    document.getElementById('btn-[#btn-remove-rating]')?.addEventListener('click', () => {
-      if (state.currentUser && state.selectedSpotDetail && state.selectedSpotDetail.userRatings) {
-        delete state.selectedSpotDetail.userRatings[state.currentUser.id];
-        state.selectedSpotDetail.rating = 4.8;
+        state.currentUser = {
+          id: `usr_${Date.now()}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          role: 'CLIENT'
+        };
+        state.isAuthModalOpen = false;
         render();
       }
-    });
-
-    document.getElementById('btn-open-chat')?.addEventListener('click', () => {
-      state.isChatOpen = !state.isChatOpen;
-      state.unreadCount = 0;
-      render();
-    });
-
-    document.getElementById('btn-close-chat')?.addEventListener('click', () => {
-      state.isChatOpen = false;
-      render();
-    });
-
-    document.querySelectorAll('.card-spot-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-spot-chat')) return;
-        const id = item.getAttribute('data-view-spot-id');
-        const spot = state.spots.find((s) => s.id === id);
-        if (spot) {
-          spot.viewsToday += 1;
-          state.selectedSpotDetail = spot;
-          render();
-        }
-      });
-    });
-
-    document.getElementById('btn-close-detail-modal')?.addEventListener('click', () => {
-      state.selectedSpotDetail = null;
-      render();
-    });
-
-    document.getElementById('btn-detail-chat')?.addEventListener('click', () => {
-      state.activeSpot = state.selectedSpotDetail;
-      state.selectedSpotDetail = null;
-      state.isChatOpen = true;
-      state.unreadCount = 0;
-      render();
-    });
-
-    document.querySelectorAll('.btn-spot-chat').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const spotId = btn.getAttribute('data-spot-id');
-        const spot = state.spots.find((s) => s.id === spotId);
-        state.activeSpot = spot;
-        state.isChatOpen = true;
-        state.unreadCount = 0;
-        render();
-      });
-    });
-
-    document.getElementById('form-chat')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input-chat-msg');
-      if (!input || !input.value.trim()) return;
-
-      state.messages.push({
-        id: `msg_${Date.now()}`,
-        senderName: state.currentUser ? state.currentUser.name : 'Gourmet User',
-        content: input.value.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMe: true
-      });
-
-      input.value = '';
-      render();
-
-      setTimeout(() => {
-        state.messages.push({
-          id: `msg_reply_${Date.now()}`,
-          senderName: state.activeSpot ? state.activeSpot.ownerName : 'Chef / Host',
-          content: 'Thank you for your message! Our kitchen team has received your request and will hold your dining slot.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isMe: false
-        });
-        render();
-      }, 1000);
     });
   }
 

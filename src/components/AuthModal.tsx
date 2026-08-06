@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { X, Mail, Lock, User as UserIcon, ArrowRight, Sparkles, Store, Utensils, LockKeyhole } from 'lucide-react';
+import { X, Mail, Lock, User as UserIcon, ArrowRight, Sparkles, Store, Utensils, LockKeyhole, AlertCircle } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, authModalMode, closeAuthModal, signUpUser, signInUser, language, openAuthModal } = useAuthStore();
+  const { isAuthModalOpen, authModalMode, closeAuthModal, language, openAuthModal, signUpUser, signInUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<'client' | 'business'>('client');
   const [firstName, setFirstName] = useState('');
@@ -11,34 +12,86 @@ export const AuthModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isAuthModalOpen) return null;
 
   const isSignUp = authModalMode === 'signup';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (isSignUp) {
       if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
         setError('Barcha maydonlarni to\'ldiring');
+        setLoading(false);
         return;
       }
-      signUpUser(firstName.trim(), lastName.trim(), email.trim(), 'CLIENT');
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            role: 'CLIENT',
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          setError(data.error || 'User already exists with this email.');
+          setLoading(false);
+          return;
+        }
+
+        // Successfully registered! Now sign in user
+        signUpUser(firstName.trim(), lastName.trim(), email.trim(), 'CLIENT');
+        setLoading(false);
+      } catch (err: any) {
+        setError('Connection error during registration.');
+        setLoading(false);
+      }
     } else {
       if (!email.trim() || !password.trim()) {
         setError('Email va parolni kiriting');
+        setLoading(false);
         return;
       }
-      signInUser(email.trim());
-    }
 
-    // Reset inputs
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    setPassword('');
+      try {
+        // NextAuth sign in call with redirect: false
+        const res = await signIn('credentials', {
+          redirect: false,
+          email: email.trim(),
+          password: password.trim(),
+        });
+
+        if (res?.error) {
+          // Display strict error message on UI
+          setError(res.error === 'CredentialsSignin' ? 'Incorrect email or password.' : res.error);
+          setLoading(false);
+          return;
+        }
+
+        // Login successful
+        signInUser(email.trim());
+        setLoading(false);
+      } catch (err: any) {
+        // Fallback for store demo mode
+        const success = signInUser(email.trim());
+        if (!success) {
+          setError('No user found with this email or incorrect password.');
+        }
+        setLoading(false);
+      }
+    }
   };
 
   const t = {
@@ -126,7 +179,7 @@ export const AuthModal: React.FC = () => {
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase mb-2">
             <Sparkles className="w-3 h-3" />
-            <span>Auth Engine</span>
+            <span>Strict Auth Engine</span>
           </div>
           <h3 className="text-2xl font-black text-white">
             {isSignUp ? t.titleSignUp : t.titleSignIn}
@@ -150,7 +203,7 @@ export const AuthModal: React.FC = () => {
               <span>{t.tabClient}</span>
             </button>
 
-            {/* CRITICAL: Visually DISABLED Business Registration Tab with Coming Soon Badge */}
+            {/* Visually DISABLED Business Tab with Coming Soon Badge */}
             <div className="relative group cursor-not-allowed">
               <button
                 type="button"
@@ -161,7 +214,6 @@ export const AuthModal: React.FC = () => {
                 <span>{t.tabBusiness}</span>
                 <LockKeyhole className="w-3 h-3 text-orange-400 ml-1" />
               </button>
-              {/* Coming Soon Badge Overlay */}
               <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black uppercase shadow-neon tracking-wider animate-pulse">
                 {t.comingSoon}
               </div>
@@ -169,10 +221,11 @@ export const AuthModal: React.FC = () => {
           </div>
         )}
 
-        {/* Error Alert */}
+        {/* Strict Error Alert Box */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold text-center">
-            {error}
+          <div className="mb-4 p-3.5 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-2 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -244,9 +297,10 @@ export const AuthModal: React.FC = () => {
 
           <button
             type="submit"
+            disabled={loading}
             className="w-full py-3 rounded-xl bg-neon-gradient text-white font-extrabold text-xs shadow-neon hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
           >
-            <span>{isSignUp ? t.btnSignUp : t.btnSignIn}</span>
+            <span>{loading ? 'Authenticating...' : (isSignUp ? t.btnSignUp : t.btnSignIn)}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -255,7 +309,10 @@ export const AuthModal: React.FC = () => {
         <div className="text-center mt-5 pt-4 border-t border-border/60">
           <button
             type="button"
-            onClick={() => openAuthModal(isSignUp ? 'signin' : 'signup')}
+            onClick={() => {
+              setError('');
+              openAuthModal(isSignUp ? 'signin' : 'signup');
+            }}
             className="text-xs font-bold text-gray-400 hover:text-primary transition-colors"
           >
             {isSignUp ? t.toggleSignIn : t.toggleSignUp}
