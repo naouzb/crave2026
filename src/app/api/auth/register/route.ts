@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/bcrypt';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { firstName, lastName, email, password, role } = body;
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
-    console.error("Registration error:", error);
+    console.error("Registration error:", error?.message);
     return NextResponse.json(
       { error: "Failed to create user account. Please try again." },
       { status: 500 }
