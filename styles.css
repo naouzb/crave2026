@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --background: #0f0f11;
+}
+
+body {
+  background-color: #0f0f11;
+  color: #f8fafc;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #ff4500 0%, #ff7b00 50%, #ff0055 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-neon-gradient {
+  background: linear-gradient(135deg, #ff4500 0%, #ff0055 100%);
+}
+
+.shadow-neon {
+  box-shadow: 0 0 20px rgba(255, 69, 0, 0.4);
+}

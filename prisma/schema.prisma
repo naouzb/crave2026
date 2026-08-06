@@ -1,0 +1,60 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CLIENT
+  BUSINESS
+  ADMIN
+}
+
+enum SpotStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  image         String?
+  role          Role      @default(CLIENT)
+  spots         Spot[]    // Restaurants owned by Business
+  messagesSent  Message[] @relation("SentMessages")
+  messagesRecv  Message[] @relation("ReceivedMessages")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Spot {
+  id            String     @id @default(cuid())
+  ownerId       String
+  owner         User       @relation(fields: [ownerId], references: [id])
+  title         String
+  category      String     // e.g., "Neapolitan Pizza", "Craft Ramen"
+  description   String
+  coverImage    String
+  viewsToday    Int        @default(0)
+  isFeatured    Boolean    @default(false)
+  status        SpotStatus @default(PENDING)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Message {
+  id            String   @id @default(cuid())
+  senderId      String
+  sender        User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId    String
+  receiver      User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content       String
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
