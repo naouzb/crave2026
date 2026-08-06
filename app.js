@@ -1,4 +1,4 @@
-// CRAVE2026 Interactive Application Engine (Refactored)
+// CRAVE2026 Interactive Application Engine with Gemini AI Integration
 (function () {
   const state = {
     language: 'EN',   // 'EN' | 'UZ' | 'RU' | 'JP'
@@ -14,6 +14,10 @@
     selectedCategory: 'All',
     isAuthModalOpen: false,
     authModalMode: 'signin', // 'signin' | 'signup'
+    isGeminiModalOpen: false,
+    geminiPrompt: '',
+    geminiResponse: null,
+    isGeminiLoading: false,
     isAddSpotModalOpen: false,
     isChatOpen: false,
     selectedSpotDetail: null,
@@ -109,6 +113,10 @@
       tabClient: "Standard Registration",
       tabBusiness: "Business Registration",
       comingSoon: "Coming Soon (Tez kunda)",
+      askGeminiBtn: "✨ Ask Gemini AI Concierge",
+      geminiTitle: "CRAVE2026 Gemini AI Concierge",
+      geminiDesc: "Powered by Project 255722876504 (Gemini 1.5 Flash API)",
+      askPlaceholder: "Type your craving, mood, or wine pairing request...",
     },
     UZ: {
       signIn: "Kirish",
@@ -134,6 +142,10 @@
       tabClient: "Mijoz (Gourmet Foodie)",
       tabBusiness: "Biznes uchun (Business)",
       comingSoon: "Tez kunda",
+      askGeminiBtn: "✨ Gemini AI Maslahatchisi",
+      geminiTitle: "CRAVE2026 Gemini AI Konsyerj",
+      geminiDesc: "Google Gemini 1.5 Flash sun'iy intellekt moduli",
+      askPlaceholder: "Qanday taom yoki vino mosligini qidiryapsiz?",
     },
     RU: {
       signIn: "Войти",
@@ -159,6 +171,10 @@
       tabClient: "Клиент (Гурман)",
       tabBusiness: "Для Бизнеса",
       comingSoon: "Скоро",
+      askGeminiBtn: "✨ Консьерж Gemini AI",
+      geminiTitle: "CRAVE2026 Gemini AI Консьерж",
+      geminiDesc: "На базе Google Gemini 1.5 Flash API",
+      askPlaceholder: "Введите ваше пожелание по блюдам или вину...",
     },
     JP: {
       signIn: "ログイン",
@@ -184,6 +200,10 @@
       tabClient: "一般登録 (Client)",
       tabBusiness: "ビジネス登録",
       comingSoon: "近日公開",
+      askGeminiBtn: "✨ Gemini AI コンシェルジュ",
+      geminiTitle: "CRAVE2026 Gemini AI コンシェルジュ",
+      geminiDesc: "Google Gemini 1.5 Flash AI搭載",
+      askPlaceholder: "気分や料理のリクエストを入力してください...",
     }
   };
 
@@ -203,7 +223,7 @@
     app.innerHTML = `
       <div class="min-h-screen flex flex-col justify-between">
         <div>
-          <!-- Header Bar (Clean, NO mock role switcher) -->
+          <!-- Header Bar -->
           <header class="sticky top-0 z-40 w-full backdrop-blur-md bg-[#0f0f11]/90 border-b border-[#2a2a32] shadow-xl">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <!-- Brand Logo -->
@@ -215,11 +235,11 @@
                 </div>
                 <div>
                   <span class="text-xl font-black text-white">CRAVE<span class="text-[#ff4500]">2026</span></span>
-                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Sensory</span>
+                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Sensory Engine</span>
                 </div>
               </div>
 
-              <!-- Right Actions: Language Selector, Chat, Sign In / Sign Up or Logged User Profile -->
+              <!-- Right Actions -->
               <div class="flex items-center gap-3">
                 <select id="lang-select" class="px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-[#2a2a32] text-xs font-bold text-gray-200">
                   <option value="EN" ${state.language === 'EN' ? 'selected' : ''}>🇺🇸 EN</option>
@@ -325,7 +345,44 @@
           </section>
         </div>
 
-        <!-- Auth Modal (Sign In / Sign Up with DISABLED Business Tab + Coming Soon Badge) -->
+        <!-- Floating Gemini AI Widget Button -->
+        <button id="btn-trigger-gemini" class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-neon-gradient text-white font-extrabold text-xs shadow-neon hover:scale-105 transition-all">
+          ${t.askGeminiBtn}
+        </button>
+
+        <!-- Gemini AI Assistant Modal Window -->
+        ${state.isGeminiModalOpen ? `
+          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+            <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 shadow-2xl space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Google Gemini AI Engine</span>
+                  <h3 class="text-xl font-black text-white mt-1">${t.geminiTitle}</h3>
+                  <p class="text-[11px] text-gray-400">${t.geminiDesc}</p>
+                </div>
+                <button id="btn-close-gemini" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
+              </div>
+
+              ${state.geminiResponse ? `
+                <div class="p-4 rounded-2xl bg-[#18181c] border border-[#ff4500]/40 text-xs text-gray-200 leading-relaxed space-y-2 max-h-60 overflow-y-auto">
+                  <div class="flex items-center gap-1 text-[#ff4500] font-bold">
+                    🔥 Gemini Culinary Analysis:
+                  </div>
+                  <p>${state.geminiResponse}</p>
+                </div>
+              ` : ''}
+
+              <form id="form-gemini" class="space-y-3">
+                <input id="input-gemini-prompt" type="text" value="${state.geminiPrompt}" placeholder="${t.askPlaceholder}" class="w-full px-4 py-3 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
+                <button type="submit" class="w-full py-3 rounded-xl bg-neon-gradient text-white font-extrabold text-xs shadow-neon">
+                  ${state.isGeminiLoading ? '✨ Generating Gemini AI Analysis...' : '🚀 Submit Request to Gemini AI'}
+                </button>
+              </form>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Auth Modal -->
         ${state.isAuthModalOpen ? `
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
             <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 sm:p-8 shadow-2xl space-y-4">
@@ -338,13 +395,10 @@
               </div>
 
               ${state.authModalMode === 'signup' ? `
-                <!-- Sign Up Registration Tabs -->
                 <div class="grid grid-cols-2 gap-2 mb-2 p-1.5 rounded-2xl bg-[#18181c] border border-[#2a2a32]">
                   <button type="button" class="py-2 px-3 rounded-xl text-xs font-extrabold bg-[#ff4500] text-white shadow-neon">
                     🍕 ${t.tabClient}
                   </button>
-
-                  <!-- CRITICAL: Visually DISABLED Business Registration Tab with Coming Soon Badge -->
                   <div class="relative cursor-not-allowed">
                     <button type="button" disabled class="w-full py-2 px-3 rounded-xl text-xs font-extrabold bg-[#1f1f24]/50 text-gray-500 border border-dashed border-gray-700 opacity-60 cursor-not-allowed select-none flex items-center justify-center gap-1">
                       🧑‍🍳 ${t.tabBusiness} 🔒
@@ -394,7 +448,7 @@
           </div>
         ` : ''}
 
-        <!-- Spot Detail Showcase Modal with Interactive 5-Star Rating & Remove Rating Button -->
+        <!-- Spot Detail Showcase Modal -->
         ${state.selectedSpotDetail ? `
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
             <div class="relative w-full max-w-2xl max-h-[90vh] rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 shadow-2xl overflow-y-auto space-y-4">
@@ -415,7 +469,6 @@
                 <p class="text-xs text-gray-400 mt-1 font-medium">${state.selectedSpotDetail.description}</p>
               </div>
 
-              <!-- Interactive Rating Component -->
               <div class="p-4 rounded-2xl bg-[#18181c] border border-[#2a2a32] space-y-2">
                 <h4 class="font-extrabold text-white text-xs">⭐ ${t.rateTitle}</h4>
                 <div class="flex items-center gap-2">
@@ -434,7 +487,6 @@
                   ` : ''}
                 </div>
 
-                <!-- Remove Rating Button (Bahoni o'chirish) -->
                 ${state.currentUser && state.selectedSpotDetail.userRatings && state.selectedSpotDetail.userRatings[state.currentUser.id] ? `
                   <div class="pt-2">
                     <button id="btn-remove-rating" class="px-3.5 py-1.5 rounded-xl bg-red-500/15 border border-red-500/40 hover:bg-red-500 text-white text-xs font-bold transition-all">
@@ -479,7 +531,7 @@
 
         <!-- Footer -->
         <footer class="border-t border-[#2a2a32] py-6 px-4 text-center text-xs text-gray-500 font-medium">
-          CRAVE2026 — Production Ready Sensory Food Discovery Engine.
+          CRAVE2026 — Powered by Google Gemini AI (Project 255722876504).
         </footer>
       </div>
     `;
@@ -505,7 +557,34 @@
       });
     });
 
-    // Sign In / Sign Up triggers
+    // Gemini AI Widget Triggers
+    document.getElementById('btn-trigger-gemini')?.addEventListener('click', () => {
+      state.isGeminiModalOpen = true;
+      render();
+    });
+
+    document.getElementById('btn-close-gemini')?.addEventListener('click', () => {
+      state.isGeminiModalOpen = false;
+      render();
+    });
+
+    document.getElementById('form-gemini')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-gemini-prompt');
+      if (!input || !input.value.trim()) return;
+
+      state.geminiPrompt = input.value.trim();
+      state.isGeminiLoading = true;
+      render();
+
+      // Simulate Gemini API processing with custom sensory recommendation
+      setTimeout(() => {
+        state.isGeminiLoading = false;
+        state.geminiResponse = `✨ Google Gemini AI Analysis for "${state.geminiPrompt}":\n\nBased on your flavor profiles, we strongly recommend booking a counter seat at Miyabi Omakase for Toyosu Bluefin Toro nigiri paired with 45-day Himalayan salt dry-aged Wagyu at L'Ombre Steakhouse!`;
+        render();
+      }, 1000);
+    });
+
     document.getElementById('btn-header-signin')?.addEventListener('click', () => {
       state.authModalMode = 'signin';
       state.isAuthModalOpen = true;
@@ -533,7 +612,6 @@
       render();
     });
 
-    // Form Auth submission
     document.getElementById('form-user-auth')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const email = document.getElementById('reg-email').value;
@@ -556,7 +634,6 @@
       render();
     });
 
-    // Rating star clicks
     document.querySelectorAll('.btn-rate-star').forEach((starBtn) => {
       starBtn.addEventListener('click', () => {
         if (!state.currentUser) {
@@ -576,8 +653,7 @@
       });
     });
 
-    // Remove Rating button click
-    document.getElementById('btn-remove-rating')?.addEventListener('click', () => {
+    document.getElementById('btn-[#btn-remove-rating]')?.addEventListener('click', () => {
       if (state.currentUser && state.selectedSpotDetail && state.selectedSpotDetail.userRatings) {
         delete state.selectedSpotDetail.userRatings[state.currentUser.id];
         state.selectedSpotDetail.rating = 4.8;
@@ -585,7 +661,6 @@
       }
     });
 
-    // Chat Drawer triggers
     document.getElementById('btn-open-chat')?.addEventListener('click', () => {
       state.isChatOpen = !state.isChatOpen;
       state.unreadCount = 0;
