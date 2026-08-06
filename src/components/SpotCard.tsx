@@ -2,11 +2,11 @@ import React from 'react';
 import { Spot } from '@/types';
 import { useChatStore } from '@/store/useChatStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { Star, MessageCircle, Flame, Eye, CheckCircle } from 'lucide-react';
+import { Star, MessageCircle, CheckCircle } from 'lucide-react';
 
 interface SpotCardProps {
   spot: Spot;
-  onOpenDetail: (spot: Spot) => void;
+  onOpenDetail?: (spot: Spot) => void;
 }
 
 export const SpotCard: React.FC<SpotCardProps> = ({ spot, onOpenDetail }) => {
@@ -15,7 +15,9 @@ export const SpotCard: React.FC<SpotCardProps> = ({ spot, onOpenDetail }) => {
 
   const handleCardClick = () => {
     incrementViews(spot.id);
-    onOpenDetail(spot);
+    if (onOpenDetail) {
+      onOpenDetail(spot);
+    }
   };
 
   const handleChatClick = (e: React.MouseEvent) => {

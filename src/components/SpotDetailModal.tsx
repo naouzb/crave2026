@@ -8,7 +8,6 @@ import {
   Star, 
   MapPin, 
   Eye, 
-  ChefHat, 
   MessageCircle, 
   Lock, 
   Phone, 
@@ -19,7 +18,6 @@ import {
   CheckCircle,
   Edit,
   Trash2,
-  ImageIcon,
   UserIcon,
   LogIn
 } from 'lucide-react';
@@ -31,7 +29,7 @@ interface SpotDetailModalProps {
 
 export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose }) => {
   const { openChatForSpot } = useChatStore();
-  const { language, currentUser, openAuthModal } = useAuthStore();
+  const { currentUser, openAuthModal } = useAuthStore();
   const { addReview, editReview, deleteReview } = useSpotStore();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);

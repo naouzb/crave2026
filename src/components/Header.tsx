@@ -62,8 +62,8 @@ export const Header: React.FC = () => {
       {isBusinessUser && (
         <div className="w-full bg-gradient-to-r from-orange-950/80 via-red-950/70 to-background border-b border-orange-500/30 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-4 text-gray-300 font-medium">
-            <span>{t.activeSpots}: <strong class="text-white font-bold">{activeSpotsCount}</strong></span>
-            <span>{t.viewsToday}: <strong class="text-white font-bold">{totalViewsToday.toLocaleString()}</strong></span>
+            <span>{t.activeSpots}: <strong className="text-white font-bold">{activeSpotsCount}</strong></span>
+            <span>{t.viewsToday}: <strong className="text-white font-bold">{totalViewsToday.toLocaleString()}</strong></span>
           </div>
 
           <button
