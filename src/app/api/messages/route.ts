@@ -1,33 +1,51 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
-  const mockMessages = [
-    {
-      id: 'msg_1',
-      senderId: 'usr_client_1',
-      senderName: 'Alex Mercer',
-      receiverId: 'usr_business_1',
-      spotId: 'spot_1',
-      content: 'Good evening! Do you have Omakase seating availability for 2 guests tonight at 8 PM?',
-      isRead: true,
-      createdAt: new Date().toISOString(),
-    }
-  ];
+export async function GET() {
+  try {
+    const messages = await prisma.message.findMany({
+      take: 50,
+      orderBy: { createdAt: 'asc' },
+      include: {
+        sender: { select: { id: true, firstName: true, lastName: true } },
+        receiver: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
 
-  return NextResponse.json({ success: true, messages: mockMessages });
+    return NextResponse.json({ success: true, messages });
+  } catch (error: any) {
+    console.error('API GET /api/messages error:', error?.message);
+    return NextResponse.json({ success: false, messages: [] }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const newMessage = {
-      id: `msg_${Date.now()}`,
-      ...body,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    };
+    const { senderId, receiverId, content } = body;
+
+    if (!senderId || !receiverId || !content) {
+      return NextResponse.json(
+        { success: false, error: 'Sender, Receiver, and Content are required.' },
+        { status: 400 }
+      );
+    }
+
+    const newMessage = await prisma.message.create({
+      data: {
+        senderId,
+        receiverId,
+        content: content.trim(),
+        isRead: false,
+      },
+    });
+
     return NextResponse.json({ success: true, message: newMessage }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Invalid message payload' }, { status: 400 });
+  } catch (error: any) {
+    console.error('API POST /api/messages error:', error?.message);
+    return NextResponse.json(
+      { success: false, error: 'Failed to record chat message.' },
+      { status: 500 }
+    );
   }
 }

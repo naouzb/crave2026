@@ -1,52 +1,58 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
-  const mockSpots = [
-    {
-      id: 'spot_1',
-      title: 'Miyabi Omakase & Edomae Sushi',
-      category: 'Omakase & Sushi',
-      description: 'Ultra-exclusive 12-seat Japanese omakase experience featuring wild-caught bluefin tuna.',
-      coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80',
-      viewsToday: 1420,
-      isFeatured: true,
-      status: 'APPROVED',
-      rating: 4.9,
-      reviewsCount: 328,
-      location: 'Ginza District / Downtown',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'spot_2',
-      title: 'Fornace 800° Neapolitan Woodfire',
-      category: 'Neapolitan Pizza',
-      description: 'Double-fermented sourdough pizza baked in custom Vesuvian volcanic stone oven.',
-      coverImage: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
-      viewsToday: 980,
-      isFeatured: true,
-      status: 'APPROVED',
-      rating: 4.8,
-      reviewsCount: 215,
-      location: 'Little Italy Quarter',
-      createdAt: new Date().toISOString(),
-    }
-  ];
+export async function GET() {
+  try {
+    const spots = await prisma.spot.findMany({
+      where: { status: 'APPROVED' },
+      include: {
+        owner: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        reviews: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  return NextResponse.json({ success: true, spots: mockSpots });
+    return NextResponse.json({ success: true, spots });
+  } catch (error: any) {
+    console.error('API GET /api/spots error:', error?.message);
+    return NextResponse.json({ success: false, spots: [] }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const newSpot = {
-      id: `spot_${Date.now()}`,
-      ...body,
-      viewsToday: 1,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
+    const { ownerId, title, category, description, coverImage, phoneNumber, priceInfo, features } = body;
+
+    if (!ownerId || !title || !category || !description || !coverImage) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required spot fields.' },
+        { status: 400 }
+      );
+    }
+
+    const newSpot = await prisma.spot.create({
+      data: {
+        ownerId,
+        title: title.trim(),
+        category: category.trim(),
+        description: description.trim(),
+        coverImage: coverImage.trim(),
+        phoneNumber: phoneNumber || '+998 90 123 45 67',
+        priceInfo: priceInfo || 'Avg 150,000 UZS / guest',
+        features: features || ['Free WiFi', 'Halal', 'Parking'],
+        status: 'PENDING',
+      },
+    });
+
     return NextResponse.json({ success: true, spot: newSpot }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400 });
+  } catch (error: any) {
+    console.error('API POST /api/spots error:', error?.message);
+    return NextResponse.json(
+      { success: false, error: 'Failed to create spot in database.' },
+      { status: 500 }
+    );
   }
 }
