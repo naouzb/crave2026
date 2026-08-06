@@ -36,6 +36,8 @@ export interface Spot {
   phoneNumber?: string;
   priceInfo?: string;
   features?: string[];
+  address?: string;
+  mapEmbedUrl?: string;
   viewsToday: number;
   isFeatured: boolean;
   status: SpotStatus;

@@ -1,25 +1,30 @@
-// CRAVE2026 Interactive Application Engine with Auth-Gating & E-Commerce Prep
+// CRAVE2026 Interactive Application Engine with Maps, Owner CRUD, i18n & Admin Panel
 (function () {
   const state = {
     language: 'EN',   // 'EN' | 'UZ' | 'RU' | 'JP'
     currentUser: {
-      id: 'usr_2',
-      firstName: 'Alex',
-      lastName: 'Mercer',
-      name: 'Alex Mercer',
-      email: 'alex@foodie.com',
-      role: 'CLIENT'
+      id: 'usr_1',
+      firstName: 'Kenji',
+      lastName: 'Takahashi',
+      name: 'Chef Kenji Takahashi',
+      email: 'kenji@omakase.io',
+      role: 'ADMIN'  // Options: 'CLIENT' | 'BUSINESS' | 'ADMIN'
     },
     searchQuery: '',
     selectedCategory: 'All',
     placeholderIndex: 0,
     isAuthModalOpen: false,
-    authModalMode: 'signin', // 'signin' | 'signup'
+    authModalMode: 'signin',
     authError: '',
     toastMessage: null,
+    isAdminViewOpen: false,
     isEditingReview: false,
+    isEditingSpot: false,
     reviewRating: 5,
     reviewText: '',
+    editTitle: '',
+    editPhone: '',
+    editPrice: '',
     isGeminiModalOpen: false,
     geminiPrompt: '',
     geminiResponse: null,
@@ -29,9 +34,11 @@
     selectedSpotDetail: null,
     activeSpot: null,
     unreadCount: 1,
-    registeredUsers: [
-      { email: 'alex@foodie.com', passwordHash: 'hashed_alex_password', firstName: 'Alex', lastName: 'Mercer' },
-      { email: 'kenji@omakase.io', passwordHash: 'hashed_kenji_password', firstName: 'Kenji', lastName: 'Takahashi' }
+    usersList: [
+      { id: 'usr_1', name: 'Chef Kenji Takahashi', email: 'kenji@omakase.io', role: 'ADMIN' },
+      { id: 'usr_2', name: 'Alex Mercer', email: 'alex@foodie.com', role: 'CLIENT' },
+      { id: 'usr_3', name: 'Marco Rossi', email: 'marco@woodfire.io', role: 'BUSINESS' },
+      { id: 'usr_4', name: 'Antoine Laurent', email: 'antoine@steak.io', role: 'BUSINESS' },
     ],
     messages: [
       {
@@ -52,6 +59,8 @@
     spots: [
       {
         id: 'spot_1',
+        ownerId: 'usr_1',
+        ownerName: 'Chef Kenji Takahashi',
         title: 'Miyabi Omakase & Edomae Sushi',
         category: 'Omakase & Sushi',
         description: 'Ultra-exclusive 12-seat Japanese omakase experience featuring wild-caught bluefin tuna imported daily from Toyosu Market, Tokyo.',
@@ -59,6 +68,8 @@
         phoneNumber: '+998 90 999 88 77',
         priceInfo: 'Avg $120 / guest',
         features: ['Halal Options', 'Free Parking', 'Chef Counter', 'Private Dining Room'],
+        address: '4-Chome Ginza District, Tokyo Promenade',
+        mapEmbedUrl: 'https://maps.google.com/maps?q=Ginza,Tokyo&t=&z=13&ie=UTF8&iwloc=&output=embed',
         viewsToday: 1420,
         fomoText: '🔥 18 people looking right now',
         isFeatured: true,
@@ -74,11 +85,12 @@
             text: 'The Toyosu Bluefin Toro was melt-in-your-mouth perfection! Chef Kenji personally explained the aging process.'
           }
         ],
-        location: 'Ginza District / Downtown',
-        ownerName: 'Chef Kenji'
+        location: 'Ginza District / Downtown'
       },
       {
         id: 'spot_2',
+        ownerId: 'usr_3',
+        ownerName: 'Marco Rossi',
         title: 'Fornace 800° Neapolitan Woodfire',
         category: 'Neapolitan Pizza',
         description: 'Double-fermented sourdough pizza baked in custom Vesuvian volcanic stone oven at 900°F with San Marzano DOP tomatoes and Bufala Mozzarella.',
@@ -86,6 +98,8 @@
         phoneNumber: '+998 97 123 45 67',
         priceInfo: 'Avg 150,000 UZS / pizza',
         features: ['Woodfire Oven', 'Free WiFi', 'Outdoor Terrace', 'Pet Friendly'],
+        address: 'Via Tribunali 32, Neapolitan Quarter',
+        mapEmbedUrl: 'https://maps.google.com/maps?q=Naples,Italy&t=&z=13&ie=UTF8&iwloc=&output=embed',
         viewsToday: 980,
         fomoText: '⚡ High Demand Today',
         isFeatured: true,
@@ -93,11 +107,12 @@
         rating: 4.8,
         reviewsCount: 215,
         reviewsList: [],
-        location: 'Little Italy Quarter',
-        ownerName: 'Marco Rossi'
+        location: 'Little Italy Quarter'
       },
       {
         id: 'spot_3',
+        ownerId: 'usr_4',
+        ownerName: 'Antoine Laurent',
         title: 'L\'Ombre Dry-Aged Steakhouse',
         category: 'Dry-Aged Steak',
         description: '45-day Himalayan salt room dry-aged Wagyu Tomahawk steaks paired with rare Bordeaux vintage reserves and smoked bone marrow.',
@@ -105,6 +120,8 @@
         phoneNumber: '+998 93 555 44 33',
         priceInfo: 'Avg 450,000 UZS / guest',
         features: ['Himalayan Salt Dry-Age Room', 'Wine Cellar', 'Valet Parking', 'Live Jazz'],
+        address: '742 Park Avenue, Upper West Promenade',
+        mapEmbedUrl: 'https://maps.google.com/maps?q=Park+Avenue,NYC&t=&z=13&ie=UTF8&iwloc=&output=embed',
         viewsToday: 1150,
         fomoText: '🔥 9 tables booked in last hour',
         isFeatured: true,
@@ -112,8 +129,7 @@
         rating: 4.95,
         reviewsCount: 410,
         reviewsList: [],
-        location: 'Upper West Promenade',
-        ownerName: 'Antoine Laurent'
+        location: 'Upper West Promenade'
       }
     ]
   };
@@ -168,6 +184,7 @@
       lockTitle: "Exclusive Spot Information Locked",
       lockDesc: "Please Log In or Register to view phone numbers, prices, and exclusive reviews.",
       lockBtn: "Please Log In or Register",
+      adminPanelBtn: "🛡️ Admin Panel",
     },
     UZ: {
       signIn: "Kirish",
@@ -201,6 +218,7 @@
       lockTitle: "Restoran Haqida Eksklyuziv Ma'lumotlar Bloklangan",
       lockDesc: "Telefon raqamlari, narxlar va haqiqiy sharhlarni ko'rish uchun Tizimga Kiring yoki Registratsiya qiling.",
       lockBtn: "Kirish Yoki Ro'yxatdan O'tish",
+      adminPanelBtn: "🛡️ Admin Paneli",
     },
     RU: {
       signIn: "Войти",
@@ -234,6 +252,7 @@
       lockTitle: "Эксклюзивная Информация Заблокирована",
       lockDesc: "Пожалуйста, Войдите или Зарегистрируйтесь, чтобы увидеть номера телефонов, цены и отзывы.",
       lockBtn: "Войти Или Зарегистрироваться",
+      adminPanelBtn: "🛡️ Панель Админа",
     },
     JP: {
       signIn: "ログイン",
@@ -267,6 +286,7 @@
       lockTitle: "限定情報がロックされています",
       lockDesc: "電話番号、価格、レビューを表示するにはログインまたは新規登録してください。",
       lockBtn: "ログインまたは登録",
+      adminPanelBtn: "🛡️ 管理者パネル",
     }
   };
 
@@ -282,6 +302,90 @@
 
     const app = document.getElementById('app');
     if (!app) return;
+
+    // ADMIN VIEW MODAL
+    if (state.isAdminViewOpen) {
+      app.innerHTML = `
+        <div class="min-h-screen bg-[#0f0f11] text-white flex flex-col justify-between p-6">
+          <div class="max-w-7xl mx-auto w-full space-y-8">
+            <div class="flex items-center justify-between border-b border-[#2a2a32] pb-4">
+              <div>
+                <span class="px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase">Super Admin Engine</span>
+                <h1 class="text-3xl font-black text-white mt-1">🛡️ CRAVE2026 Admin Dashboard</h1>
+              </div>
+              <button id="btn-close-admin" class="px-4 py-2 rounded-xl bg-[#18181c] border border-[#2a2a32] text-xs font-bold text-white hover:border-[#ff4500]">
+                ← Back to Main Feed
+              </button>
+            </div>
+
+            <!-- Manage Users Table -->
+            <div class="p-6 rounded-3xl bg-[#1f1f24] border border-[#2a2a32] space-y-4">
+              <h3 class="text-lg font-black text-white">1. Manage Users (${state.usersList.length})</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-300">
+                  <thead class="bg-[#18181c] text-gray-400 uppercase font-extrabold">
+                    <tr>
+                      <th class="p-3">ID</th>
+                      <th class="p-3">Name</th>
+                      <th class="p-3">Email</th>
+                      <th class="p-3">Role</th>
+                      <th class="p-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[#2a2a32]">
+                    ${state.usersList.map((u) => `
+                      <tr>
+                        <td class="p-3 font-mono text-gray-500">${u.id}</td>
+                        <td class="p-3 font-bold text-white">${u.name}</td>
+                        <td class="p-3">${u.email}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#ff4500]/20 text-[#ff4500]">${u.role}</span></td>
+                        <td class="p-3 text-right">
+                          <button data-delete-user="${u.id}" class="btn-del-user px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold">Delete User</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Manage Spots Table -->
+            <div class="p-6 rounded-3xl bg-[#1f1f24] border border-[#2a2a32] space-y-4">
+              <h3 class="text-lg font-black text-white">2. Moderate Spots (${state.spots.length})</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-300">
+                  <thead class="bg-[#18181c] text-gray-400 uppercase font-extrabold">
+                    <tr>
+                      <th class="p-3">Title</th>
+                      <th class="p-3">Category</th>
+                      <th class="p-3">Owner</th>
+                      <th class="p-3">Status</th>
+                      <th class="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[#2a2a32]">
+                    ${state.spots.map((spot) => `
+                      <tr>
+                        <td class="p-3 font-bold text-white">${spot.title}</td>
+                        <td class="p-3">${spot.category}</td>
+                        <td class="p-3 text-gray-400">${spot.ownerName}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400">${spot.status}</span></td>
+                        <td class="p-3 text-right space-x-2">
+                          <button data-approve-spot="${spot.id}" class="btn-appr-spot px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold">Approve</button>
+                          <button data-delete-spot="${spot.id}" class="btn-del-spot px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold">Delete Spot</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      bindAdminEvents();
+      return;
+    }
 
     app.innerHTML = `
       <div class="min-h-screen flex flex-col justify-between bg-[#0f0f11] text-white">
@@ -317,6 +421,12 @@
                   <option value="RU" ${state.language === 'RU' ? 'selected' : ''}>🇷🇺 RU</option>
                   <option value="JP" ${state.language === 'JP' ? 'selected' : ''}>🇯🇵 JP</option>
                 </select>
+
+                ${state.currentUser && state.currentUser.role === 'ADMIN' ? `
+                  <button id="btn-open-admin-panel" class="px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 font-extrabold text-xs shadow-neon">
+                    ${t.adminPanelBtn}
+                  </button>
+                ` : ''}
 
                 <button id="btn-open-chat" class="relative p-2 rounded-xl bg-[#1f1f24] border border-[#2a2a32] text-gray-300 hover:text-white">
                   💬
@@ -425,7 +535,7 @@
           ${t.askGeminiBtn}
         </button>
 
-        <!-- Spot Detail Modal with Auth Lock Screen, Phone/Price Grid, Delivery Badge, Order Button & Review System -->
+        <!-- Spot Detail Modal with Maps, Owner Edit/Delete & Review System -->
         ${state.selectedSpotDetail ? `
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
             <div class="relative w-full max-w-3xl max-h-[90vh] rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 sm:p-8 shadow-2xl overflow-y-auto space-y-6">
@@ -438,10 +548,27 @@
                 </div>
               </div>
 
-              <div>
-                <h3 class="text-3xl font-black text-white">${state.selectedSpotDetail.title}</h3>
-                <p class="text-xs text-gray-400 mt-1 font-medium">${state.selectedSpotDetail.description}</p>
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-3xl font-black text-white">${state.selectedSpotDetail.title}</h3>
+                  <p class="text-xs text-gray-400 mt-1 font-medium">${state.selectedSpotDetail.description}</p>
+                </div>
               </div>
+
+              <!-- OWNER EDIT & DELETE CONTROLS -->
+              ${state.currentUser && (state.currentUser.id === state.selectedSpotDetail.ownerId || state.currentUser.name === state.selectedSpotDetail.ownerName) ? `
+                <div class="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between">
+                  <span class="text-xs font-bold text-orange-400">✏️ Owner Controls (${state.selectedSpotDetail.ownerName})</span>
+                  <div class="flex gap-2">
+                    <button id="btn-owner-edit-spot" class="px-3 py-1.5 rounded-xl bg-[#18181c] text-xs font-bold text-white hover:border-[#ff4500]">
+                      ${state.isEditingSpot ? 'Cancel Edit' : 'Edit Spot'}
+                    </button>
+                    <button id="btn-owner-delete-spot" class="px-3 py-1.5 rounded-xl bg-red-500/20 text-xs font-bold text-red-400">
+                      Delete Spot
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
 
               <!-- AUTH LOCK SCREEN (If NOT Logged In) -->
               ${!state.currentUser ? `
@@ -482,15 +609,12 @@
                     </div>
                   </div>
 
-                  <!-- Features Tags -->
-                  <div class="p-4 rounded-2xl bg-[#18181c] border border-[#2a2a32] space-y-2">
-                    <h4 class="text-xs font-black text-gray-400 uppercase">Features & Amenities</h4>
-                    <div class="flex flex-wrap gap-2">
-                      ${(state.selectedSpotDetail.features || ['Free WiFi', 'Halal', 'Parking', 'Woodfire Oven']).map((ft) => `
-                        <span class="px-3 py-1 rounded-xl bg-[#1f1f24] border border-[#2a2a32] text-xs font-bold text-gray-200">
-                          ✓ ${ft}
-                        </span>
-                      `).join('')}
+                  <!-- MAP EMBED LOCATION SECTION -->
+                  <div class="p-5 rounded-2xl bg-[#18181c] border border-[#2a2a32] space-y-3">
+                    <h4 class="text-xs font-black text-white uppercase">📍 Location & Map Navigation</h4>
+                    <p class="text-xs text-gray-300 font-medium">Address: <strong class="text-white">${state.selectedSpotDetail.address || '4-Chome Ginza District, Tokyo Promenade'}</strong></p>
+                    <div class="w-full h-48 rounded-xl overflow-hidden border border-[#2a2a32]">
+                      <iframe title="Map Embed" src="${state.selectedSpotDetail.mapEmbedUrl || 'https://maps.google.com/maps?q=Ginza,Tokyo&t=&z=13&ie=UTF8&iwloc=&output=embed'}" width="100%" height="100%" style="border:0" allowfullscreen loading="lazy"></iframe>
                     </div>
                   </div>
 
@@ -503,159 +627,8 @@
                       ${t.orderBookBtn}
                     </button>
                   </div>
-
-                  <!-- Review System -->
-                  <div class="p-5 rounded-2xl bg-[#18181c] border border-[#2a2a32] space-y-4">
-                    <h4 class="text-sm font-black text-white">🌟 Reviews & Ratings (⭐ ${state.selectedSpotDetail.rating})</h4>
-                    
-                    ${(() => {
-                      const userRev = state.selectedSpotDetail.reviewsList ? state.selectedSpotDetail.reviewsList.find((r) => r.userId === state.currentUser.id) : null;
-                      if (!userRev || state.isEditingReview) {
-                        return `
-                          <form id="form-review-submit" class="p-4 rounded-xl bg-[#1f1f24] border border-[#2a2a32] space-y-3">
-                            <h5 class="text-xs font-bold text-white">${state.isEditingReview ? 'Edit Review' : 'Write a Review'}</h5>
-                            <div class="flex items-center gap-1 text-yellow-400">
-                              ${[1, 2, 3, 4, 5].map((s) => `
-                                <button type="button" data-[#star-val]="${s}" class="btn-review-star text-lg ${state.reviewRating >= s ? 'text-yellow-400' : 'text-gray-600'}">★</button>
-                              `).join('')}
-                            </div>
-                            <textarea id="input-review-text" required rows="2" placeholder="Share your culinary experience..." class="w-full p-2.5 rounded-xl bg-[#18181c] border border-[#2a2a32] text-xs text-white">${state.reviewText}</textarea>
-                            <button type="submit" class="w-full py-2.5 rounded-xl bg-neon-gradient text-white text-xs font-extrabold shadow-neon">
-                              Publish Review
-                            </button>
-                          </form>
-                        `;
-                      } else {
-                        return `
-                          <div class="p-4 rounded-xl bg-[#ff4500]/10 border border-[#ff4500]/40 space-y-2">
-                            <div class="flex items-center justify-between">
-                              <span class="text-xs font-bold text-white">${userRev.userName} (Your Review)</span>
-                              <div class="flex gap-2">
-                                <button id="btn-edit-user-review" class="text-xs font-bold text-[#ff4500]">Edit</button>
-                                <button id="btn-delete-user-review" class="text-xs font-bold text-red-400">Delete</button>
-                              </div>
-                            </div>
-                            <p class="text-xs text-gray-200">${userRev.text}</p>
-                          </div>
-                        `;
-                      }
-                    })()}
-
-                    <div class="space-y-3 pt-2">
-                      ${(state.selectedSpotDetail.reviewsList || []).map((r) => `
-                        <div class="p-3 rounded-xl bg-[#1f1f24] border border-[#2a2a32] space-y-1">
-                          <div class="flex justify-between text-xs">
-                            <span class="font-bold text-white">${r.userName}</span>
-                            <span class="text-yellow-400 font-bold">⭐ ${r.rating}/5</span>
-                          </div>
-                          <p class="text-xs text-gray-300 font-medium">${r.text}</p>
-                        </div>
-                      `).join('')}
-                    </div>
-                  </div>
                 </div>
               `}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Gemini AI Modal -->
-        ${state.isGeminiModalOpen ? `
-          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-            <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 shadow-2xl space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Google Gemini AI Engine</span>
-                  <h3 class="text-xl font-black text-white mt-1">${t.geminiTitle}</h3>
-                </div>
-                <button id="btn-close-gemini" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
-              </div>
-
-              ${state.geminiResponse ? `
-                <div class="p-4 rounded-2xl bg-[#18181c] border border-[#ff4500]/40 text-xs text-gray-200 leading-relaxed space-y-2 max-h-60 overflow-y-auto">
-                  <div class="flex items-center gap-1 text-[#ff4500] font-bold">🔥 Gemini Culinary Analysis:</div>
-                  <p>${state.geminiResponse}</p>
-                </div>
-              ` : ''}
-
-              <form id="form-gemini" class="space-y-3">
-                <input id="input-gemini-prompt" type="text" value="${state.geminiPrompt}" placeholder="${t.askPlaceholder}" class="w-full px-4 py-3 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                <button type="submit" class="w-full py-3 rounded-xl bg-neon-gradient text-white font-extrabold text-xs shadow-neon">
-                  ${state.isGeminiLoading ? '✨ Generating Gemini AI Analysis...' : '🚀 Submit Request to Gemini AI'}
-                </button>
-              </form>
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Auth Modal -->
-        ${state.isAuthModalOpen ? `
-          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-            <div class="relative w-full max-w-lg rounded-3xl bg-[#1f1f24] border border-[#2a2a32] p-6 sm:p-8 shadow-2xl space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="px-2.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] text-[10px] font-black uppercase">Strict Auth Engine</span>
-                  <h3 class="text-xl font-black text-white mt-1">${state.authModalMode === 'signup' ? t.signUp : t.signIn}</h3>
-                </div>
-                <button id="btn-close-auth" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
-              </div>
-
-              ${state.authModalMode === 'signup' ? `
-                <div class="grid grid-cols-2 gap-2 mb-2 p-1.5 rounded-2xl bg-[#18181c] border border-[#2a2a32]">
-                  <button type="button" class="py-2 px-3 rounded-xl text-xs font-extrabold bg-[#ff4500] text-white shadow-neon">
-                    🍕 ${t.tabClient}
-                  </button>
-                  <div class="relative cursor-not-allowed">
-                    <button type="button" disabled class="w-full py-2 px-3 rounded-xl text-xs font-extrabold bg-[#1f1f24]/50 text-gray-500 border border-dashed border-gray-700 opacity-60 cursor-not-allowed select-none flex items-center justify-center gap-1">
-                      🧑‍🍳 ${t.tabBusiness} 🔒
-                    </button>
-                    <div class="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black uppercase shadow-neon animate-pulse">
-                      ${t.comingSoon}
-                    </div>
-                  </div>
-                </div>
-              ` : ''}
-
-              ${state.authError ? `
-                <div class="p-3.5 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-2 animate-in fade-in">
-                  ⚠️ <span>${state.authError}</span>
-                </div>
-              ` : ''}
-
-              <form id="form-user-auth" class="space-y-3">
-                ${state.authModalMode === 'signup' ? `
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-bold text-gray-300 mb-1">First Name</label>
-                      <input id="reg-fname" type="text" required placeholder="Alex" class="w-full px-4 py-2.5 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-gray-300 mb-1">Last Name</label>
-                      <input id="reg-lname" type="text" required placeholder="Mercer" class="w-full px-4 py-2.5 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                    </div>
-                  </div>
-                ` : ''}
-
-                <div>
-                  <label class="block text-xs font-bold text-gray-300 mb-1">Email Address</label>
-                  <input id="reg-email" type="email" required placeholder="alex.mercer@foodie.com" class="w-full px-4 py-2.5 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-gray-300 mb-1">Password</label>
-                  <input id="reg-pass" type="password" required placeholder="••••••••••••" class="w-full px-4 py-2.5 rounded-xl bg-[#18181c] border border-[#2a2a32] text-white text-xs" />
-                </div>
-
-                <button type="submit" class="w-full py-3 rounded-xl bg-neon-gradient text-white font-extrabold text-xs shadow-neon">
-                  ${state.authModalMode === 'signup' ? t.signUp : t.signIn}
-                </button>
-              </form>
-
-              <div class="text-center pt-2 border-t border-[#2a2a32]">
-                <button id="btn-toggle-auth-mode" class="text-xs font-bold text-gray-400 hover:text-[#ff4500]">
-                  ${state.authModalMode === 'signup' ? 'Already registered? Sign In' : 'Don\'t have an account? Sign Up'}
-                </button>
-              </div>
             </div>
           </div>
         ` : ''}
@@ -670,9 +643,49 @@
     bindEvents();
   }
 
+  function bindAdminEvents() {
+    document.getElementById('btn-close-admin')?.addEventListener('click', () => {
+      state.isAdminViewOpen = false;
+      render();
+    });
+
+    document.querySelectorAll('.btn-del-user').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-delete-user');
+        state.usersList = state.usersList.filter((u) => u.id !== id);
+        triggerToast("🗑️ User deleted.");
+        render();
+      });
+    });
+
+    document.querySelectorAll('.btn-appr-spot').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-approve-spot');
+        const s = state.spots.find((sp) => sp.id === id);
+        if (s) s.status = 'APPROVED';
+        triggerToast("✓ Spot approved!");
+        render();
+      });
+    });
+
+    document.querySelectorAll('.btn-del-spot').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-delete-spot');
+        state.spots = state.spots.filter((sp) => sp.id !== id);
+        triggerToast("🗑️ Spot deleted.");
+        render();
+      });
+    });
+  }
+
   function bindEvents() {
     document.getElementById('lang-select')?.addEventListener('change', (e) => {
       state.language = e.target.value;
+      render();
+    });
+
+    document.getElementById('btn-open-admin-panel')?.addEventListener('click', () => {
+      state.isAdminViewOpen = true;
       render();
     });
 
@@ -699,65 +712,18 @@
       render();
     });
 
-    document.getElementById('form-review-submit')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const txt = document.getElementById('input-review-text').value;
-      if (state.selectedSpotDetail && state.currentUser) {
-        if (!state.selectedSpotDetail.reviewsList) state.selectedSpotDetail.reviewsList = [];
-        const existingIdx = state.selectedSpotDetail.reviewsList.findIndex((r) => r.userId === state.currentUser.id);
-        if (existingIdx >= 0) {
-          state.selectedSpotDetail.reviewsList[existingIdx].text = txt;
-        } else {
-          state.selectedSpotDetail.reviewsList.unshift({
-            id: `rev_${Date.now()}`,
-            userId: state.currentUser.id,
-            userName: state.currentUser.name,
-            rating: state.reviewRating,
-            text: txt
-          });
-        }
-        state.isEditingReview = false;
-        triggerToast("🌟 Thank you! Your review has been published.");
-      }
-    });
-
-    document.getElementById('btn-edit-user-review')?.addEventListener('click', () => {
-      state.isEditingReview = true;
-      render();
-    });
-
-    document.getElementById('btn-delete-user-review')?.addEventListener('click', () => {
-      if (state.selectedSpotDetail && state.currentUser && state.selectedSpotDetail.reviewsList) {
-        state.selectedSpotDetail.reviewsList = state.selectedSpotDetail.reviewsList.filter((r) => r.userId !== state.currentUser.id);
-        state.isEditingReview = false;
-        triggerToast("🗑️ Your review has been deleted.");
+    document.getElementById('btn-owner-delete-spot')?.addEventListener('click', () => {
+      if (state.selectedSpotDetail) {
+        state.spots = state.spots.filter((s) => s.id !== state.selectedSpotDetail.id);
+        state.selectedSpotDetail = null;
+        triggerToast("🗑️ Restaurant deleted.");
+        render();
       }
     });
 
     document.getElementById('btn-trigger-gemini')?.addEventListener('click', () => {
       state.isGeminiModalOpen = true;
       render();
-    });
-
-    document.getElementById('btn-close-gemini')?.addEventListener('click', () => {
-      state.isGeminiModalOpen = false;
-      render();
-    });
-
-    document.getElementById('form-gemini')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input-gemini-prompt');
-      if (!input || !input.value.trim()) return;
-
-      state.geminiPrompt = input.value.trim();
-      state.isGeminiLoading = true;
-      render();
-
-      setTimeout(() => {
-        state.isGeminiLoading = false;
-        state.geminiResponse = `✨ Google Gemini AI Analysis for "${state.geminiPrompt}":\n\nBased on your flavor profiles, we strongly recommend booking a counter seat at Miyabi Omakase for Toyosu Bluefin Toro nigiri paired with 45-day Himalayan salt dry-aged Wagyu at L'Ombre Steakhouse!`;
-        render();
-      }, 1000);
     });
 
     document.getElementById('btn-header-signin')?.addEventListener('click', () => {
@@ -779,66 +745,6 @@
       render();
     });
 
-    document.getElementById('btn-close-auth')?.addEventListener('click', () => {
-      state.isAuthModalOpen = false;
-      render();
-    });
-
-    document.getElementById('btn-toggle-auth-mode')?.addEventListener('click', () => {
-      state.authError = '';
-      state.authModalMode = state.authModalMode === 'signup' ? 'signin' : 'signup';
-      render();
-    });
-
-    document.getElementById('form-user-auth')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      state.authError = '';
-      const email = document.getElementById('reg-email').value.trim().toLowerCase();
-      const pass = document.getElementById('reg-pass').value.trim();
-
-      if (state.authModalMode === 'signup') {
-        const fname = document.getElementById('reg-fname').value.trim();
-        const lname = document.getElementById('reg-lname').value.trim();
-
-        const existing = state.registeredUsers.find((u) => u.email.toLowerCase() === email);
-        if (existing) {
-          state.authError = "User already exists with this email.";
-          render();
-          return;
-        }
-
-        state.registeredUsers.push({ email, passwordHash: 'hashed_' + pass, firstName: fname, lastName: lname });
-        state.currentUser = {
-          id: `usr_${Date.now()}`,
-          firstName: fname,
-          lastName: lname,
-          name: `${fname} ${lname}`,
-          email,
-          role: 'CLIENT'
-        };
-        state.isAuthModalOpen = false;
-        render();
-      } else {
-        const user = state.registeredUsers.find((u) => u.email.toLowerCase() === email);
-        if (!user) {
-          state.authError = "No user found with this email.";
-          render();
-          return;
-        }
-
-        state.currentUser = {
-          id: `usr_${Date.now()}`,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email,
-          role: 'CLIENT'
-        };
-        state.isAuthModalOpen = false;
-        render();
-      }
-    });
-
     document.querySelectorAll('.card-spot-item').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.closest('.btn-spot-chat')) return;
@@ -854,14 +760,6 @@
 
     document.getElementById('btn-close-detail-modal')?.addEventListener('click', () => {
       state.selectedSpotDetail = null;
-      render();
-    });
-
-    document.getElementById('btn-modal-chat')?.addEventListener('click', () => {
-      state.activeSpot = state.selectedSpotDetail;
-      state.selectedSpotDetail = null;
-      state.isChatOpen = true;
-      state.unreadCount = 0;
       render();
     });
 

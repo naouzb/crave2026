@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Spot, Review } from '@/types';
+import { Spot, Review, SpotStatus } from '@/types';
 
 interface SpotState {
   spots: Spot[];
@@ -11,7 +11,10 @@ interface SpotState {
   openAddSpotModal: () => void;
   closeAddSpotModal: () => void;
   addSpot: (spot: Omit<Spot, 'id' | 'createdAt' | 'viewsToday' | 'status'>) => void;
+  updateSpot: (spotId: string, data: Partial<Spot>) => void;
+  deleteSpot: (spotId: string) => void;
   approveSpot: (spotId: string) => void;
+  rejectSpot: (spotId: string) => void;
   incrementViews: (spotId: string) => void;
   addReview: (spotId: string, userId: string, userName: string, rating: number, text: string, photos?: string[]) => void;
   editReview: (spotId: string, userId: string, rating: number, text: string, photos?: string[]) => void;
@@ -30,6 +33,8 @@ const INITIAL_SPOTS: Spot[] = [
     phoneNumber: '+998 90 999 88 77',
     priceInfo: 'Avg $120 / guest',
     features: ['Halal Options', 'Free Parking', 'Chef Counter', 'Private Dining Room'],
+    address: '4-Chome Ginza District, Tokyo Promenade',
+    mapEmbedUrl: 'https://maps.google.com/maps?q=Ginza,Tokyo&t=&z=13&ie=UTF8&iwloc=&output=embed',
     viewsToday: 1420,
     isFeatured: true,
     status: 'APPROVED',
@@ -61,6 +66,8 @@ const INITIAL_SPOTS: Spot[] = [
     phoneNumber: '+998 97 123 45 67',
     priceInfo: 'Avg 150,000 UZS / pizza',
     features: ['Woodfire Oven', 'Free WiFi', 'Outdoor Terrace', 'Pet Friendly'],
+    address: 'Via Tribunali 32, Neapolitan Boulevard',
+    mapEmbedUrl: 'https://maps.google.com/maps?q=Naples,Italy&t=&z=13&ie=UTF8&iwloc=&output=embed',
     viewsToday: 980,
     isFeatured: true,
     status: 'APPROVED',
@@ -81,6 +88,8 @@ const INITIAL_SPOTS: Spot[] = [
     phoneNumber: '+998 93 555 44 33',
     priceInfo: 'Avg 450,000 UZS / guest',
     features: ['Himalayan Salt Dry-Age Room', 'Wine Cellar', 'Valet Parking', 'Live Jazz'],
+    address: '742 Park Avenue, Upper West Promenade',
+    mapEmbedUrl: 'https://maps.google.com/maps?q=Park+Avenue,NYC&t=&z=13&ie=UTF8&iwloc=&output=embed',
     viewsToday: 1150,
     isFeatured: true,
     status: 'APPROVED',
@@ -121,9 +130,25 @@ export const useSpotStore = create<SpotState>((set) => ({
     };
   }),
 
+  updateSpot: (spotId: string, data: Partial<Spot>) => set((state) => ({
+    spots: state.spots.map((spot) =>
+      spot.id === spotId ? { ...spot, ...data } : spot
+    ),
+  })),
+
+  deleteSpot: (spotId: string) => set((state) => ({
+    spots: state.spots.filter((spot) => spot.id !== spotId),
+  })),
+
   approveSpot: (spotId: string) => set((state) => ({
     spots: state.spots.map((spot) =>
-      spot.id === spotId ? { ...spot, status: 'APPROVED' } : spot
+      spot.id === spotId ? { ...spot, status: 'APPROVED' as SpotStatus } : spot
+    ),
+  })),
+
+  rejectSpot: (spotId: string) => set((state) => ({
+    spots: state.spots.map((spot) =>
+      spot.id === spotId ? { ...spot, status: 'REJECTED' as SpotStatus } : spot
     ),
   })),
 

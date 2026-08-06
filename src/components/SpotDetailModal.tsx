@@ -19,7 +19,9 @@ import {
   Edit,
   Trash2,
   UserIcon,
-  LogIn
+  LogIn,
+  Map,
+  Pencil
 } from 'lucide-react';
 
 interface SpotDetailModalProps {
@@ -30,15 +32,20 @@ interface SpotDetailModalProps {
 export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose }) => {
   const { openChatForSpot } = useChatStore();
   const { currentUser, openAuthModal } = useAuthStore();
-  const { addReview, editReview, deleteReview } = useSpotStore();
+  const { addReview, editReview, deleteReview, updateSpot, deleteSpot } = useSpotStore();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingReview, setIsEditingReview] = useState(false);
+  const [isEditingSpot, setIsEditingSpot] = useState(false);
+  const [editTitle, setEditTitle] = useState(spot?.title || '');
+  const [editPhone, setEditPhone] = useState(spot?.phoneNumber || '');
+  const [editPrice, setEditPrice] = useState(spot?.priceInfo || '');
 
   if (!spot) return null;
 
+  const isOwner = currentUser?.id === spot.ownerId || currentUser?.firstName?.toLowerCase() === spot.ownerName?.toLowerCase();
   const userReview = spot.reviewsList?.find((r) => r.userId === currentUser?.id);
 
   const triggerToast = (msg: string) => {
@@ -54,9 +61,9 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
     e.preventDefault();
     if (!currentUser) return;
 
-    if (isEditing || userReview) {
+    if (isEditingReview || userReview) {
       editReview(spot.id, currentUser.id, rating, reviewText.trim());
-      setIsEditing(false);
+      setIsEditingReview(false);
       triggerToast("✨ Your review has been updated!");
     } else {
       addReview(spot.id, currentUser.id, `${currentUser.firstName} ${currentUser.lastName}`, rating, reviewText.trim());
@@ -68,8 +75,25 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
   const handleDeleteReview = () => {
     if (!currentUser) return;
     deleteReview(spot.id, currentUser.id);
-    setIsEditing(false);
+    setIsEditingReview(false);
     triggerToast("🗑️ Your review has been deleted.");
+  };
+
+  const handleSaveSpotEdits = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSpot(spot.id, {
+      title: editTitle.trim(),
+      phoneNumber: editPhone.trim(),
+      priceInfo: editPrice.trim(),
+    });
+    setIsEditingSpot(false);
+    triggerToast("✏️ Restaurant details updated successfully!");
+  };
+
+  const handleDeleteRestaurant = () => {
+    deleteSpot(spot.id);
+    onClose();
+    triggerToast("🗑️ Restaurant spot deleted.");
   };
 
   return (
@@ -121,6 +145,57 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
           </div>
         </div>
 
+        {/* BUSINESS OWNER CONTROLS (If Current User is Owner) */}
+        {isOwner && (
+          <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-orange-400">
+              <Pencil className="w-4 h-4" />
+              <span>Owner Actions ({spot.ownerName || 'Chef'})</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsEditingSpot(!isEditingSpot)}
+                className="px-3 py-1.5 rounded-xl bg-card border border-border text-xs font-bold text-white hover:border-primary flex items-center gap-1"
+              >
+                <Edit className="w-3.5 h-3.5 text-primary" />
+                <span>{isEditingSpot ? 'Cancel Edit' : 'Edit Restaurant'}</span>
+              </button>
+              <button
+                onClick={handleDeleteRestaurant}
+                className="px-3 py-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-xs font-bold text-red-400 hover:text-white flex items-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* OWNER EDIT FORM */}
+        {isEditingSpot && (
+          <form onSubmit={handleSaveSpotEdits} className="p-5 rounded-2xl bg-surface border border-border space-y-3 animate-in fade-in">
+            <h4 className="text-xs font-black text-white uppercase">Edit Restaurant Information</h4>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 mb-1">Title</label>
+              <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required className="w-full p-2.5 rounded-xl bg-card border border-border text-xs text-white" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-1">Phone</label>
+                <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} required className="w-full p-2.5 rounded-xl bg-card border border-border text-xs text-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-1">Price Info</label>
+                <input type="text" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} required className="w-full p-2.5 rounded-xl bg-card border border-border text-xs text-white" />
+              </div>
+            </div>
+            <button type="submit" className="w-full py-2.5 rounded-xl bg-neon-gradient text-white text-xs font-extrabold shadow-neon">
+              Save Restaurant Changes
+            </button>
+          </form>
+        )}
+
         {/* AUTH-GATING LOCK SCREEN (When User is NOT Logged In) */}
         {!currentUser ? (
           <div className="relative rounded-2xl bg-surface border border-border p-8 text-center overflow-hidden shadow-2xl space-y-4">
@@ -131,7 +206,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
             <h3 className="text-xl font-black text-white">Exclusive Spot Information Locked</h3>
 
             <p className="text-xs text-gray-300 max-w-sm mx-auto font-medium leading-relaxed">
-              Please Log In or Register to view phone numbers, prices, and exclusive reviews.
+              Please Log In or Register to view phone numbers, prices, maps, and exclusive reviews.
             </p>
 
             <button
@@ -186,6 +261,26 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
               </div>
             </div>
 
+            {/* MAP EMBED LOCATION SECTION */}
+            <div className="p-5 rounded-2xl bg-surface border border-border space-y-3">
+              <div className="flex items-center gap-2">
+                <Map className="w-4 h-4 text-primary" />
+                <h4 className="text-xs font-black text-white uppercase">Location & Map Navigation</h4>
+              </div>
+              <p className="text-xs text-gray-300 font-medium">📍 Address: <strong className="text-white">{spot.address || '4-Chome Ginza District, Tokyo Promenade'}</strong></p>
+              <div className="w-full h-48 rounded-xl overflow-hidden border border-border shadow-inner">
+                <iframe
+                  title="Spot Location Map"
+                  src={spot.mapEmbedUrl || 'https://maps.google.com/maps?q=Ginza,Tokyo&t=&z=13&ie=UTF8&iwloc=&output=embed'}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
             {/* Features Tags */}
             <div className="p-4 rounded-2xl bg-surface border border-border space-y-2">
               <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Features & Amenities</h4>
@@ -233,9 +328,9 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
               </div>
 
               {/* Review Form */}
-              {(!userReview || isEditing) && (
+              {(!userReview || isEditingReview) && (
                 <form onSubmit={handleReviewSubmit} className="p-4 rounded-xl bg-surface border border-border space-y-3">
-                  <h4 className="text-xs font-black text-white uppercase">{isEditing ? 'Edit Review' : 'Write a Review'}</h4>
+                  <h4 className="text-xs font-black text-white uppercase">{isEditingReview ? 'Edit Review' : 'Write a Review'}</h4>
                   <div className="flex items-center gap-1 text-yellow-400">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button key={s} type="button" onClick={() => setRating(s)} className="p-1 hover:scale-125 transition-transform">
@@ -253,16 +348,16 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
                     className="w-full p-3 rounded-xl bg-card border border-border text-white text-xs placeholder-gray-500 focus:outline-none focus:border-primary"
                   />
                   <div className="flex justify-end gap-2">
-                    {isEditing && <button type="button" onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-xs text-gray-400 font-bold">Cancel</button>}
+                    {isEditingReview && <button type="button" onClick={() => setIsEditingReview(false)} className="px-3 py-1.5 text-xs text-gray-400 font-bold">Cancel</button>}
                     <button type="submit" className="px-4 py-2 rounded-xl bg-neon-gradient text-white text-xs font-extrabold shadow-neon">
-                      {isEditing ? 'Save' : 'Publish Review'}
+                      {isEditingReview ? 'Save' : 'Publish Review'}
                     </button>
                   </div>
                 </form>
               )}
 
               {/* Highlighted Existing User Review */}
-              {userReview && !isEditing && (
+              {userReview && !isEditingReview && (
                 <div className="p-4 rounded-xl bg-primary/10 border border-primary/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -275,7 +370,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { setRating(userReview.rating); setReviewText(userReview.text || ''); setIsEditing(true); }} className="px-2.5 py-1 rounded-lg bg-card text-xs text-gray-300 hover:text-white flex items-center gap-1 font-bold">
+                      <button onClick={() => { setRating(userReview.rating); setReviewText(userReview.text || ''); setIsEditingReview(true); }} className="px-2.5 py-1 rounded-lg bg-card text-xs text-gray-300 hover:text-white flex items-center gap-1 font-bold">
                         <Edit className="w-3 h-3 text-primary" /> Edit
                       </button>
                       <button onClick={handleDeleteReview} className="px-2.5 py-1 rounded-lg bg-red-500/20 text-xs text-red-400 hover:text-white flex items-center gap-1 font-bold">

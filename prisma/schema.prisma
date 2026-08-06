@@ -46,6 +46,8 @@ model Spot {
   phoneNumber   String?
   priceInfo     String?    // e.g. "$15/kg" or "Avg 150,000 UZS"
   features      String[]   // e.g. ["Free WiFi", "Halal", "Parking", "Woodfire Oven"]
+  address       String?    // Physical address string
+  mapEmbedUrl   String?    // Google Maps iframe embed URL
   viewsToday    Int        @default(0)
   isFeatured    Boolean    @default(false)
   status        SpotStatus @default(PENDING)
