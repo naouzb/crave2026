@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 enum Role {
@@ -20,52 +20,51 @@ enum SpotStatus {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  firstName     String
-  lastName      String
-  email         String    @unique
-  passwordHash  String?
-  image         String?
-  role          Role      @default(CLIENT)
-  spots         Spot[]
-  messagesSent  Message[] @relation("SentMessages")
-  messagesRecv  Message[] @relation("ReceivedMessages")
-  reviews       Review[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  email        String    @unique
+  firstName    String
+  lastName     String
+  passwordHash String
+  role         Role      @default(CLIENT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  spots        Spot[]
+  reviews      Review[]
+  sentMsgs     Message[] @relation("SentMessages")
+  recvMsgs     Message[] @relation("ReceivedMessages")
 }
 
 model Spot {
-  id            String     @id @default(cuid())
-  ownerId       String
-  owner         User       @relation(fields: [ownerId], references: [id])
-  title         String
-  category      String
-  description   String
-  coverImage    String
-  phoneNumber   String?
-  priceInfo     String?    // e.g. "$15/kg" or "Avg 150,000 UZS"
-  features      String[]   // e.g. ["Free WiFi", "Halal", "Parking", "Woodfire Oven"]
-  address       String?    // Physical address string
-  mapEmbedUrl   String?    // Google Maps iframe embed URL
-  viewsToday    Int        @default(0)
-  isFeatured    Boolean    @default(false)
-  status        SpotStatus @default(PENDING)
-  reviews       Review[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  ownerId     String
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  category    String
+  description String
+  coverImage  String
+  phoneNumber String?
+  priceInfo   String?
+  calories    String?
+  features    Json?
+  address     String?
+  mapEmbedUrl String?
+  viewsToday  Int        @default(0)
+  status      SpotStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  reviews     Review[]
 }
 
 model Review {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   spotId    String
-  spot      Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  rating    Int      // 1 to 5 stars
-  text      String?
-  photos    String[]
+  rating    Int
+  text      String
+  photos    Json?
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot      Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
 
   @@unique([userId, spotId])
 }
@@ -73,10 +72,10 @@ model Review {
 model Message {
   id         String   @id @default(cuid())
   senderId   String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
   receiverId String
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
   content    String
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 }

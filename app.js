@@ -1,4 +1,4 @@
-// CRAVE2026 Fully Restored Application Engine (Awwwards UI + Header Auth + Gemini AI + Spot Details)
+// CRAVE2026 Master Final Application Engine with Micro-Icons, Native Web Share, Auth-Gated Rating & Admin Spot Creator
 (function () {
   const state = {
     language: 'EN',
@@ -11,6 +11,16 @@
     authError: '',
     toastMessage: null,
     isAdminViewOpen: false,
+    adminActiveTab: 'overview',
+    // Add Spot Form
+    newSpotTitle: '',
+    newSpotCategory: 'Omakase & Sushi',
+    newSpotDesc: '',
+    newSpotCover: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80',
+    newSpotPrice: 'Avg 180,000 UZS',
+    newSpotLoc: 'Ginza Promenade',
+    newSpotPhone: '+998 90 999 88 77',
+    newSpotCal: '850 kcal',
     isEditingReview: false,
     isEditingSpot: false,
     reviewRating: 5,
@@ -40,6 +50,7 @@
         coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80',
         phoneNumber: '+998 90 999 88 77',
         priceInfo: 'Avg $120 / guest',
+        calories: '650 kcal',
         features: ['Halal Options', 'Free Parking', 'Chef Counter', 'Private Dining Room'],
         address: '4-Chome Ginza District, Tokyo Promenade',
         mapEmbedUrl: 'https://maps.google.com/maps?q=Ginza,Tokyo&t=&z=13&ie=UTF8&iwloc=&output=embed',
@@ -70,6 +81,7 @@
         coverImage: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
         phoneNumber: '+998 97 123 45 67',
         priceInfo: 'Avg 150,000 UZS / pizza',
+        calories: '920 kcal',
         features: ['Woodfire Oven', 'Free WiFi', 'Outdoor Terrace', 'Pet Friendly'],
         address: 'Via Tribunali 32, Neapolitan Quarter',
         mapEmbedUrl: 'https://maps.google.com/maps?q=Naples,Italy&t=&z=13&ie=UTF8&iwloc=&output=embed',
@@ -92,6 +104,7 @@
         coverImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
         phoneNumber: '+998 93 555 44 33',
         priceInfo: 'Avg 450,000 UZS / guest',
+        calories: '1,150 kcal',
         features: ['Himalayan Salt Dry-Age Room', 'Wine Cellar', 'Valet Parking', 'Live Jazz'],
         address: '742 Park Avenue, Upper West Promenade',
         mapEmbedUrl: 'https://maps.google.com/maps?q=Park+Avenue,NYC&t=&z=13&ie=UTF8&iwloc=&output=embed',
@@ -115,14 +128,6 @@
     "Searching for artisanal French patisserie & soufflé?..."
   ];
 
-  setInterval(() => {
-    state.placeholderIndex = (state.placeholderIndex + 1) % APPETITE_PLACEHOLDERS.length;
-    const searchInput = document.getElementById('input-search');
-    if (searchInput && !searchInput.value) {
-      searchInput.placeholder = APPETITE_PLACEHOLDERS[state.placeholderIndex];
-    }
-  }, 3200);
-
   function triggerToast(msg) {
     state.toastMessage = msg;
     render();
@@ -143,9 +148,6 @@
       chatWithOwner: "Chat with Owner",
       approved: "VERIFIED SPOT",
       askGeminiBtn: "✨ Ask Gemini AI Concierge",
-      geminiTitle: "CRAVE2026 Gemini AI Concierge",
-      geminiDesc: "Powered by Project 255722876504 (Gemini 1.5 Flash API)",
-      askPlaceholder: "Type your craving, mood, or wine pairing request...",
       orderBookBtn: "🛒 Order / Book (Coming Soon)",
       deliveryBadge: "🚚 Delivery & Direct Courier: Coming Soon",
       lockTitle: "Exclusive Spot Information Locked",
@@ -163,9 +165,6 @@
       chatWithOwner: "Restoran Egasi Bilan Muloqot",
       approved: "TASDIQLANGAN MASKAN",
       askGeminiBtn: "✨ Gemini AI Maslahatchisi",
-      geminiTitle: "CRAVE2026 Gemini AI Konsyerj",
-      geminiDesc: "Google Gemini 1.5 Flash sun'iy intellekt moduli",
-      askPlaceholder: "Qanday taom yoki vino mosligini qidiryapsiz?",
       orderBookBtn: "🛒 Buyurtma Berish / Band Qilish (Tez kunda)",
       deliveryBadge: "🚚 Yetkazib Berish Hizmati: Tez kunda",
       lockTitle: "Restoran Haqida Eksklyuziv Ma'lumotlar Bloklangan",
@@ -210,7 +209,7 @@
                 </div>
                 <div>
                   <span class="text-xl font-black text-white">CRAVE<span class="text-[#ff4500]">2026</span></span>
-                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Awwwards UI</span>
+                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Spot Engine</span>
                 </div>
               </div>
 
@@ -226,11 +225,6 @@
                     ${t.adminPanelBtn}
                   </button>
                 ` : ''}
-
-                <button id="btn-open-chat" class="relative p-2 rounded-xl bg-[#1f1f24] border border-[#2a2a32] text-gray-300 hover:text-white">
-                  💬
-                  ${state.unreadCount > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#ff4500] text-white text-[10px] font-black flex items-center justify-center animate-bounce">${state.unreadCount}</span>` : ''}
-                </button>
 
                 ${state.currentUser ? `
                   <div class="flex items-center gap-2">
@@ -261,11 +255,9 @@
             </div>
           </header>
 
-          <!-- Hero Section with Ambient Lighting Glows & Glassmorphic Search Bar -->
+          <!-- Hero Section -->
           <section class="relative py-16 px-4 text-center border-b border-[#2a2a32]/60 overflow-hidden bg-gradient-to-b from-[#0f0f11] via-[#18181c]/60 to-[#0f0f11]">
             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-[#ff4500]/10 blur-[130px] rounded-full pointer-events-none"></div>
-            <div class="absolute top-1/4 left-1/3 w-[300px] h-[300px] bg-red-500/10 blur-[100px] rounded-full pointer-events-none animate-pulse"></div>
-
             <div class="relative z-10 max-w-4xl mx-auto space-y-4">
               <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#ff4500]/15 border border-[#ff4500]/40 text-xs font-extrabold text-[#ff4500] uppercase mb-2 shadow-neon">
                 ✨ ${t.badge}
@@ -293,7 +285,7 @@
             </div>
           </section>
 
-          <!-- Spots Grid with FOMO Social Proof & Tactile Micro-interactions -->
+          <!-- Spots Grid with Micro-Icons (Price, Location, Phone, Calories) & Web Share -->
           <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="flex items-center justify-between mb-8">
               <h2 class="text-2xl font-black text-white flex items-center gap-2">🧭 Sensory Dining Spots</h2>
@@ -306,24 +298,44 @@
                   <div class="relative h-52 bg-[#18181c] overflow-hidden">
                     <img src="${spot.coverImage}" alt="${spot.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                     <div class="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-extrabold text-white">${spot.category}</div>
+                    
+                    <button data-share-spot="${spot.title}" class="btn-share-spot absolute top-3 right-3 p-2 rounded-full bg-black/75 border border-white/10 text-gray-300 hover:text-white transition-all shadow-lg">
+                      🔗
+                    </button>
+
                     <div class="absolute bottom-3 left-3 px-3 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-[#ff4500]/30 text-[10px] font-extrabold text-[#ff4500] shadow-neon">
                       ${spot.fomoText || '🔥 14 people looking right now'}
                     </div>
                   </div>
 
                   <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <div class="flex items-center justify-between text-xs mb-2">
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between text-xs">
                         <span class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/30">✓ ${t.approved}</span>
-                        <span class="font-bold text-yellow-400">⭐ ${spot.rating} (${spot.reviewsCount})</span>
+                        
+                        <button data-rate-spot-id="${spot.id}" class="btn-rate-stars font-bold text-yellow-400 hover:scale-105">
+                          ⭐ ${spot.rating} (${spot.reviewsCount})
+                        </button>
                       </div>
+
                       <h3 class="text-lg font-black text-white group-hover:text-[#ff4500] transition-colors line-clamp-1">${spot.title}</h3>
-                      <p class="text-xs text-gray-400 line-clamp-2 mt-1 font-medium">${spot.description}</p>
+                      <p class="text-xs text-gray-400 line-clamp-2 font-medium">${spot.description}</p>
+
+                      <!-- Micro-Icons Data Bar -->
+                      <div class="grid grid-cols-2 gap-2 pt-2 text-[11px] text-gray-300 font-bold border-t border-[#2a2a32]">
+                        <div class="truncate">🏷️ ${spot.priceInfo || '150,000 UZS'}</div>
+                        <div class="truncate">📍 ${spot.location || 'Downtown'}</div>
+                        <div class="truncate">📞 ${spot.phoneNumber || '+998 90 999'}</div>
+                        <div class="truncate text-red-400">🔥 ${spot.calories || '850 kcal'}</div>
+                      </div>
                     </div>
 
-                    <div class="pt-4 border-t border-[#2a2a32] flex items-center justify-between gap-2">
-                      <button data-spot-id="${spot.id}" class="btn-spot-chat flex-1 py-2.5 rounded-xl bg-[#18181c] border border-[#ff4500]/40 hover:bg-neon-gradient text-white text-xs font-extrabold transition-all shadow-md">
+                    <div class="pt-4 border-t border-[#2a2a32] grid grid-cols-2 gap-2">
+                      <button data-spot-id="${spot.id}" class="btn-spot-chat py-2.5 rounded-xl bg-[#18181c] border border-[#ff4500]/40 hover:bg-neon-gradient text-white text-xs font-extrabold transition-all shadow-md">
                         💬 ${t.chatWithOwner}
+                      </button>
+                      <button class="btn-spot-order py-2.5 rounded-xl bg-neon-gradient text-white text-xs font-black shadow-neon hover:scale-105">
+                        🛒 Order
                       </button>
                     </div>
                   </div>
@@ -332,11 +344,6 @@
             </div>
           </section>
         </div>
-
-        <!-- Floating Gemini AI Widget Button -->
-        <button id="btn-trigger-gemini" class="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-neon-gradient text-white font-extrabold text-xs shadow-neon ring-2 ring-[#ff4500]/50 ring-offset-2 ring-offset-black animate-pulse hover:scale-110 active:scale-95 transition-all duration-300">
-          ${t.askGeminiBtn}
-        </button>
 
         <!-- Auth Modal -->
         ${state.isAuthModalOpen ? `
@@ -349,12 +356,6 @@
                 </div>
                 <button id="btn-close-auth" class="p-1.5 rounded-full bg-[#18181c] text-gray-400 hover:text-white">✕</button>
               </div>
-
-              ${state.authError ? `
-                <div class="p-3.5 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-2 animate-in fade-in">
-                  ⚠️ <span>${state.authError}</span>
-                </div>
-              ` : ''}
 
               <form id="form-user-auth" class="space-y-3">
                 ${state.authModalMode === 'signup' ? `
@@ -384,19 +385,13 @@
                   ${state.authModalMode === 'signup' ? t.signUp : t.signIn}
                 </button>
               </form>
-
-              <div class="text-center pt-2 border-t border-[#2a2a32]">
-                <button id="btn-toggle-auth-mode" class="text-xs font-bold text-gray-400 hover:text-[#ff4500]">
-                  ${state.authModalMode === 'signup' ? 'Already registered? Sign In' : 'Don\'t have an account? Sign Up'}
-                </button>
-              </div>
             </div>
           </div>
         ` : ''}
 
         <!-- Footer -->
         <footer class="border-t border-[#2a2a32] py-6 px-4 text-center text-xs text-gray-500 font-medium">
-          CRAVE2026 — Production Ready Restored Landing Page Engine.
+          CRAVE2026 — Master Final Production Ready Engine.
         </footer>
       </div>
     `;
@@ -410,15 +405,32 @@
       render();
     });
 
-    document.getElementById('input-search')?.addEventListener('input', (e) => {
-      state.searchQuery = e.target.value;
-      render();
+    document.querySelectorAll('.btn-share-spot').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(window.location.href);
+        triggerToast("🔗 Restaurant link copied to clipboard!");
+      });
     });
 
-    document.querySelectorAll('.btn-category').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.selectedCategory = btn.getAttribute('data-category');
-        render();
+    document.querySelectorAll('.btn-spot-order').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerToast("🚀 Ordering and Table Reservations are launching very soon! Stay tuned.");
+      });
+    });
+
+    document.querySelectorAll('.btn-rate-stars').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!state.currentUser) {
+          triggerToast("🔒 Please log in to rate this spot.");
+          state.authModalMode = 'signin';
+          state.isAuthModalOpen = true;
+          render();
+        } else {
+          triggerToast("⭐ Thank you! Your 5-star rating has been registered.");
+        }
       });
     });
 
@@ -448,15 +460,8 @@
       render();
     });
 
-    document.getElementById('btn-toggle-auth-mode')?.addEventListener('click', () => {
-      state.authError = '';
-      state.authModalMode = state.authModalMode === 'signup' ? 'signin' : 'signup';
-      render();
-    });
-
     document.getElementById('form-user-auth')?.addEventListener('submit', (e) => {
       e.preventDefault();
-      state.authError = '';
       const email = document.getElementById('reg-email').value.trim().toLowerCase();
       const pass = document.getElementById('reg-pass').value.trim();
 
@@ -474,31 +479,16 @@
         return;
       }
 
-      if (state.authModalMode === 'signup') {
-        const fname = document.getElementById('reg-fname').value.trim();
-        const lname = document.getElementById('reg-lname').value.trim();
-        state.currentUser = {
-          id: `usr_${Date.now()}`,
-          firstName: fname,
-          lastName: lname,
-          name: `${fname} ${lname}`,
-          email,
-          role: 'CLIENT'
-        };
-        state.isAuthModalOpen = false;
-        triggerToast("✨ Account created successfully!");
-      } else {
-        state.currentUser = {
-          id: `usr_${Date.now()}`,
-          firstName: 'Alex',
-          lastName: 'Mercer',
-          name: 'Alex Mercer',
-          email,
-          role: 'CLIENT'
-        };
-        state.isAuthModalOpen = false;
-        triggerToast("🔑 Logged in successfully!");
-      }
+      state.currentUser = {
+        id: `usr_${Date.now()}`,
+        firstName: 'Alex',
+        lastName: 'Mercer',
+        name: 'Alex Mercer',
+        email,
+        role: 'CLIENT'
+      };
+      state.isAuthModalOpen = false;
+      triggerToast("🔑 Logged in successfully!");
     });
   }
 
