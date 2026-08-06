@@ -1,19 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
 import { SpotCard } from '@/components/SpotCard';
+import { SpotDetailModal } from '@/components/SpotDetailModal';
+import { GeminiCravingAssistant } from '@/components/GeminiCravingAssistant';
 import { AuthModal } from '@/components/AuthModal';
 import { AddSpotModal } from '@/components/AddSpotModal';
 import { ChatDrawer } from '@/components/ChatDrawer';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Flame, Sparkles, Utensils, ShieldCheck, Compass } from 'lucide-react';
+import { Spot } from '@/types';
+import { Flame, Utensils, Compass } from 'lucide-react';
 
 export default function Home() {
   const { spots, searchQuery, selectedCategory } = useSpotStore();
   const { language, role } = useAuthStore();
+  const [selectedSpotModal, setSelectedSpotModal] = useState<Spot | null>(null);
 
   const filteredSpots = spots.filter((spot) => {
     const matchesSearch =
@@ -23,7 +27,6 @@ export default function Home() {
     const matchesCategory =
       selectedCategory === 'All' || spot.category === selectedCategory;
 
-    // Filter by status for Client vs Business/Admin
     if (role === 'CLIENT') {
       return matchesSearch && matchesCategory && spot.status === 'APPROVED';
     }
@@ -60,10 +63,10 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary selection:text-white">
       <div>
-        {/* Sticky Header with Dynamic Role Extensions */}
+        {/* Sticky Header */}
         <Header />
 
-        {/* Hero Section with Search & Category Filters */}
+        {/* Hero Section with Glassmorphic Search & Appetite Placeholders */}
         <HeroSection />
 
         {/* Sensory Spots Grid Section */}
@@ -89,12 +92,25 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {filteredSpots.map((spot) => (
-                <SpotCard key={spot.id} spot={spot} />
+                <SpotCard
+                  key={spot.id}
+                  spot={spot}
+                  onOpenDetail={(s) => setSelectedSpotModal(s)}
+                />
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {/* Interactive Floating Gemini AI Assistant */}
+      <GeminiCravingAssistant />
+
+      {/* Spot Detail Modal */}
+      <SpotDetailModal
+        spot={selectedSpotModal}
+        onClose={() => setSelectedSpotModal(null)}
+      />
 
       {/* Global Interactive Modals */}
       <AuthModal />

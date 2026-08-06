@@ -1,8 +1,8 @@
-// CRAVE2026 Interactive Application Engine with High-Priority Header Auth Click Handlers
+// CRAVE2026 Fully Restored Application Engine (Awwwards UI + Header Auth + Gemini AI + Spot Details)
 (function () {
   const state = {
     language: 'EN',
-    currentUser: null, // Start logged out so Sign In and Sign Up buttons are visible
+    currentUser: null,
     searchQuery: '',
     selectedCategory: 'All',
     placeholderIndex: 0,
@@ -49,7 +49,15 @@
         status: 'APPROVED',
         rating: 4.9,
         reviewsCount: 328,
-        reviewsList: [],
+        reviewsList: [
+          {
+            id: 'rev_1',
+            userId: 'usr_2',
+            userName: 'Alex Mercer',
+            rating: 5,
+            text: 'The Toyosu Bluefin Toro was melt-in-your-mouth perfection!'
+          }
+        ],
         location: 'Ginza District / Downtown'
       },
       {
@@ -73,9 +81,47 @@
         reviewsCount: 215,
         reviewsList: [],
         location: 'Little Italy Quarter'
+      },
+      {
+        id: 'spot_3',
+        ownerId: 'usr_4',
+        ownerName: 'Antoine Laurent',
+        title: 'L\'Ombre Dry-Aged Steakhouse',
+        category: 'Dry-Aged Steak',
+        description: '45-day Himalayan salt room dry-aged Wagyu Tomahawk steaks paired with rare Bordeaux vintage reserves and smoked bone marrow.',
+        coverImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
+        phoneNumber: '+998 93 555 44 33',
+        priceInfo: 'Avg 450,000 UZS / guest',
+        features: ['Himalayan Salt Dry-Age Room', 'Wine Cellar', 'Valet Parking', 'Live Jazz'],
+        address: '742 Park Avenue, Upper West Promenade',
+        mapEmbedUrl: 'https://maps.google.com/maps?q=Park+Avenue,NYC&t=&z=13&ie=UTF8&iwloc=&output=embed',
+        viewsToday: 1150,
+        fomoText: '🔥 9 tables booked in last hour',
+        isFeatured: true,
+        status: 'APPROVED',
+        rating: 4.95,
+        reviewsCount: 410,
+        reviewsList: [],
+        location: 'Upper West Promenade'
       }
     ]
   };
+
+  const APPETITE_PLACEHOLDERS = [
+    "Craving 45-day Himalayan salt dry-aged Wagyu?...",
+    "Looking for romantic 900° woodfire Neapolitan pizza?...",
+    "Craving wild Toyosu Bluefin Toro Omakase?...",
+    "Need 24-hour slow-cooked spicy Tonkotsu ramen?...",
+    "Searching for artisanal French patisserie & soufflé?..."
+  ];
+
+  setInterval(() => {
+    state.placeholderIndex = (state.placeholderIndex + 1) % APPETITE_PLACEHOLDERS.length;
+    const searchInput = document.getElementById('input-search');
+    if (searchInput && !searchInput.value) {
+      searchInput.placeholder = APPETITE_PLACEHOLDERS[state.placeholderIndex];
+    }
+  }, 3200);
 
   function triggerToast(msg) {
     state.toastMessage = msg;
@@ -152,7 +198,7 @@
         ` : ''}
 
         <div>
-          <!-- Header Bar with z-50 pointer-events-auto -->
+          <!-- Header Bar -->
           <header class="sticky top-0 z-50 w-full backdrop-blur-md bg-white/5 border-b border-white/10 shadow-2xl relative pointer-events-auto">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <!-- Brand Logo -->
@@ -164,7 +210,7 @@
                 </div>
                 <div>
                   <span class="text-xl font-black text-white">CRAVE<span class="text-[#ff4500]">2026</span></span>
-                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Spot Engine</span>
+                  <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-[#ff4500]/20 text-[#ff4500] font-bold uppercase">Awwwards UI</span>
                 </div>
               </div>
 
@@ -174,6 +220,17 @@
                   <option value="EN" ${state.language === 'EN' ? 'selected' : ''}>🇺🇸 EN</option>
                   <option value="UZ" ${state.language === 'UZ' ? 'selected' : ''}>🇺🇿 UZ</option>
                 </select>
+
+                ${state.currentUser && state.currentUser.role === 'ADMIN' ? `
+                  <button id="btn-open-admin-panel" class="px-3.5 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 font-extrabold text-xs shadow-neon">
+                    ${t.adminPanelBtn}
+                  </button>
+                ` : ''}
+
+                <button id="btn-open-chat" class="relative p-2 rounded-xl bg-[#1f1f24] border border-[#2a2a32] text-gray-300 hover:text-white">
+                  💬
+                  ${state.unreadCount > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#ff4500] text-white text-[10px] font-black flex items-center justify-center animate-bounce">${state.unreadCount}</span>` : ''}
+                </button>
 
                 ${state.currentUser ? `
                   <div class="flex items-center gap-2">
@@ -204,9 +261,11 @@
             </div>
           </header>
 
-          <!-- Hero Section -->
+          <!-- Hero Section with Ambient Lighting Glows & Glassmorphic Search Bar -->
           <section class="relative py-16 px-4 text-center border-b border-[#2a2a32]/60 overflow-hidden bg-gradient-to-b from-[#0f0f11] via-[#18181c]/60 to-[#0f0f11]">
             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-[#ff4500]/10 blur-[130px] rounded-full pointer-events-none"></div>
+            <div class="absolute top-1/4 left-1/3 w-[300px] h-[300px] bg-red-500/10 blur-[100px] rounded-full pointer-events-none animate-pulse"></div>
+
             <div class="relative z-10 max-w-4xl mx-auto space-y-4">
               <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#ff4500]/15 border border-[#ff4500]/40 text-xs font-extrabold text-[#ff4500] uppercase mb-2 shadow-neon">
                 ✨ ${t.badge}
@@ -217,23 +276,55 @@
               <p class="text-xs sm:text-base text-gray-400 max-w-2xl mx-auto font-medium">
                 ${t.subtitle}
               </p>
+
+              <!-- Glassmorphic Search Bar -->
+              <div class="max-w-xl mx-auto mt-6 relative">
+                <input id="input-search" type="text" value="${state.searchQuery}" placeholder="${APPETITE_PLACEHOLDERS[state.placeholderIndex]}" class="w-full px-5 py-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white text-xs placeholder-gray-400 focus:outline-none focus:border-[#ff4500] shadow-2xl transition-all" />
+              </div>
+
+              <!-- Category Pills Row -->
+              <div class="flex flex-wrap items-center justify-center gap-2 mt-4">
+                ${['All', 'Omakase & Sushi', 'Neapolitan Pizza', 'Dry-Aged Steak', 'Craft Ramen', 'Artisanal Pastry'].map((cat) => `
+                  <button data-category="${cat}" class="btn-category px-4 py-2 rounded-xl text-xs font-bold transition-all ${state.selectedCategory === cat ? 'bg-neon-gradient text-white shadow-neon scale-105' : 'bg-[#1f1f24] border border-[#2a2a32] text-gray-400 hover:text-white'}">
+                    ${cat === 'All' ? '🔥 All Categories' : cat}
+                  </button>
+                `).join('')}
+              </div>
             </div>
           </section>
 
-          <!-- Spots Grid -->
+          <!-- Spots Grid with FOMO Social Proof & Tactile Micro-interactions -->
           <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex items-center justify-between mb-8">
+              <h2 class="text-2xl font-black text-white flex items-center gap-2">🧭 Sensory Dining Spots</h2>
+              <span class="text-xs text-gray-400 font-bold bg-[#18181c] px-3.5 py-1.5 rounded-full border border-[#2a2a32]">${filteredSpots.length} Premium Spots</span>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               ${filteredSpots.map((spot) => `
                 <div data-view-spot-id="${spot.id}" class="card-spot-item rounded-3xl bg-[#1f1f24] border border-[#2a2a32] overflow-hidden flex flex-col justify-between hover:border-[#ff4500]/60 hover:-translate-y-2 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 cursor-pointer group">
                   <div class="relative h-52 bg-[#18181c] overflow-hidden">
                     <img src="${spot.coverImage}" alt="${spot.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                     <div class="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-extrabold text-white">${spot.category}</div>
+                    <div class="absolute bottom-3 left-3 px-3 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-[#ff4500]/30 text-[10px] font-extrabold text-[#ff4500] shadow-neon">
+                      ${spot.fomoText || '🔥 14 people looking right now'}
+                    </div>
                   </div>
 
                   <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
                     <div>
+                      <div class="flex items-center justify-between text-xs mb-2">
+                        <span class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/30">✓ ${t.approved}</span>
+                        <span class="font-bold text-yellow-400">⭐ ${spot.rating} (${spot.reviewsCount})</span>
+                      </div>
                       <h3 class="text-lg font-black text-white group-hover:text-[#ff4500] transition-colors line-clamp-1">${spot.title}</h3>
                       <p class="text-xs text-gray-400 line-clamp-2 mt-1 font-medium">${spot.description}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#2a2a32] flex items-center justify-between gap-2">
+                      <button data-spot-id="${spot.id}" class="btn-spot-chat flex-1 py-2.5 rounded-xl bg-[#18181c] border border-[#ff4500]/40 hover:bg-neon-gradient text-white text-xs font-extrabold transition-all shadow-md">
+                        💬 ${t.chatWithOwner}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -241,6 +332,11 @@
             </div>
           </section>
         </div>
+
+        <!-- Floating Gemini AI Widget Button -->
+        <button id="btn-trigger-gemini" class="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-neon-gradient text-white font-extrabold text-xs shadow-neon ring-2 ring-[#ff4500]/50 ring-offset-2 ring-offset-black animate-pulse hover:scale-110 active:scale-95 transition-all duration-300">
+          ${t.askGeminiBtn}
+        </button>
 
         <!-- Auth Modal -->
         ${state.isAuthModalOpen ? `
@@ -300,7 +396,7 @@
 
         <!-- Footer -->
         <footer class="border-t border-[#2a2a32] py-6 px-4 text-center text-xs text-gray-500 font-medium">
-          CRAVE2026 — Production Ready Header Auth Engine.
+          CRAVE2026 — Production Ready Restored Landing Page Engine.
         </footer>
       </div>
     `;
@@ -309,6 +405,23 @@
   }
 
   function bindEvents() {
+    document.getElementById('lang-select')?.addEventListener('change', (e) => {
+      state.language = e.target.value;
+      render();
+    });
+
+    document.getElementById('input-search')?.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      render();
+    });
+
+    document.querySelectorAll('.btn-category').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.selectedCategory = btn.getAttribute('data-category');
+        render();
+      });
+    });
+
     document.getElementById('btn-header-signin')?.addEventListener('click', (e) => {
       e.stopPropagation();
       state.authError = '';
