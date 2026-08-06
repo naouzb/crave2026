@@ -6,113 +6,77 @@ import { LanguageSelector } from './LanguageSelector';
 import { 
   Flame, 
   Plus, 
-  ShieldCheck, 
-  Eye, 
-  UtensilsCrossed, 
   MessageSquare, 
-  User as UserIcon, 
   LogOut,
-  Sparkles
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { currentUser, role, setRole, openAuthModal, logout, language } = useAuthStore();
+  const { currentUser, openAuthModal, logout, language } = useAuthStore();
   const { spots, openAddSpotModal } = useSpotStore();
-  const { unreadCount, isChatOpen, markMessagesAsRead } = useChatStore();
+  const { unreadCount, markMessagesAsRead } = useChatStore();
 
+  const isBusinessUser = currentUser?.role === 'BUSINESS' || currentUser?.role === 'ADMIN';
   const totalViewsToday = spots.reduce((acc, s) => acc + s.viewsToday, 0);
   const activeSpotsCount = spots.filter((s) => s.status === 'APPROVED').length;
 
   const t = {
     EN: {
-      adminMode: "ADMIN MODE ACTIVE",
-      businessMode: "BUSINESS OWNER MODE",
+      signIn: "Sign In",
+      signUp: "Sign Up",
+      logout: "Log Out",
       activeSpots: "Active Spots",
       viewsToday: "Total Views Today",
       addNewSpot: "Add New Spot",
-      login: "Sign In / Register",
-      logout: "Sign Out",
-      foodieRole: "Hungry Foodie",
-      ownerRole: "Restaurant Owner",
-      adminRole: "Super Admin",
     },
     UZ: {
-      adminMode: "ADMIN REJIM FAOL",
-      businessMode: "RESTORAN EGASI REJIMI",
+      signIn: "Kirish",
+      signUp: "Registratsiya",
+      logout: "Chiqish",
       activeSpots: "Faol Maskanlar",
       viewsToday: "Bugungi Ko'rishlar",
       addNewSpot: "+ Yangi Maskan Qo'shish",
-      login: "Kirish / Ro'yxatdan O'tish",
-      logout: "Chiqish",
-      foodieRole: "Mijoz (Foodie)",
-      ownerRole: "Restoran Egasi",
-      adminRole: "Super Admin",
     },
     RU: {
-      adminMode: "АДМИН РЕЖИМ АКТИВЕН",
-      businessMode: "РЕЖИМ ВЛАДЕЛЬЦА",
+      signIn: "Войти",
+      signUp: "Регистрация",
+      logout: "Выйти",
       activeSpots: "Активные Заведения",
       viewsToday: "Просмотров За День",
       addNewSpot: "+ Добавить Заведение",
-      login: "Войти / Регистрация",
-      logout: "Выйти",
-      foodieRole: "Гурман (Клиент)",
-      ownerRole: "Владелец Заведения",
-      adminRole: "Супер Админ",
     },
     JP: {
-      adminMode: "管理者モード アクティブ",
-      businessMode: "店舗オーナーモード",
-      activeSpots: "アクティブな店舗",
+      signIn: "ログイン",
+      signUp: "新規登録",
+      logout: "ログアウト",
+      activeSpots: "アクティブ店舗",
       viewsToday: "本日の閲覧数",
       addNewSpot: "+ 新規スポット追加",
-      login: "ログイン / 登録",
-      logout: "ログアウト",
-      foodieRole: "グルメクライアント",
-      ownerRole: "レストランオーナー",
-      adminRole: "スーパー管理者",
     }
   }[language];
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-background/90 border-b border-border shadow-xl">
-      {/* Secondary Dynamic Extension Bar for BUSINESS / ADMIN Mode */}
-      {(role === 'BUSINESS' || role === 'ADMIN') && (
-        <div className="w-full bg-gradient-to-r from-orange-950/80 via-red-950/70 to-background border-b border-orange-500/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 font-extrabold border border-orange-500/40 shadow-neon">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              {role === 'ADMIN' ? t.adminMode : t.businessMode}
-            </span>
-
-            <div className="flex items-center gap-4 text-gray-300 font-medium">
-              <span className="flex items-center gap-1.5">
-                <UtensilsCrossed className="w-3.5 h-3.5 text-orange-400" />
-                <span>{t.activeSpots}:</span>
-                <strong className="text-white font-bold">{activeSpotsCount}</strong>
-              </span>
-
-              <span className="hidden sm:flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5 text-red-400" />
-                <span>{t.viewsToday}:</span>
-                <strong className="text-white font-bold">{totalViewsToday.toLocaleString()}</strong>
-              </span>
-            </div>
+      {/* Optional Business Extension Top Bar for Business Owners */}
+      {isBusinessUser && (
+        <div className="w-full bg-gradient-to-r from-orange-950/80 via-red-950/70 to-background border-b border-orange-500/30 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-4 text-gray-300 font-medium">
+            <span>{t.activeSpots}: <strong class="text-white font-bold">{activeSpotsCount}</strong></span>
+            <span>{t.viewsToday}: <strong class="text-white font-bold">{totalViewsToday.toLocaleString()}</strong></span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openAddSpotModal}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-neon-gradient text-white font-bold shadow-neon hover:scale-105 active:scale-95 transition-all text-xs"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>{t.addNewSpot}</span>
-            </button>
-          </div>
+          <button
+            onClick={openAddSpotModal}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-neon-gradient text-white font-bold shadow-neon hover:scale-105 transition-all text-xs"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>{t.addNewSpot}</span>
+          </button>
         </div>
       )}
 
-      {/* Main Standard Header Bar */}
+      {/* Main Clean Standard Header Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <div className="flex items-center gap-3">
@@ -130,47 +94,10 @@ export const Header: React.FC = () => {
                 Sensory
               </span>
             </div>
-            <p className="text-[10px] text-gray-400 font-medium tracking-wide hidden md:block">
-              Sensory Food Discovery & Dining Engine
-            </p>
           </div>
         </div>
 
-        {/* Role Quick Selector Toggle (Interactive Demo Bar) */}
-        <div className="hidden lg:flex items-center bg-card border border-border rounded-xl p-1 gap-1">
-          <button
-            onClick={() => setRole('CLIENT')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              role === 'CLIENT'
-                ? 'bg-primary text-white shadow-sm font-bold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            🍕 {t.foodieRole}
-          </button>
-          <button
-            onClick={() => setRole('BUSINESS')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              role === 'BUSINESS'
-                ? 'bg-primary text-white shadow-sm font-bold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            🧑‍🍳 {t.ownerRole}
-          </button>
-          <button
-            onClick={() => setRole('ADMIN')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              role === 'ADMIN'
-                ? 'bg-red-600 text-white shadow-sm font-bold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            ⚡ {t.adminRole}
-          </button>
-        </div>
-
-        {/* Right Action Icons & Auth Profile */}
+        {/* Right Action Icons & Standard Authentication Buttons */}
         <div className="flex items-center gap-3">
           <LanguageSelector />
 
@@ -179,7 +106,7 @@ export const Header: React.FC = () => {
             <button
               onClick={markMessagesAsRead}
               className="p-2 rounded-xl bg-card border border-border hover:border-primary/50 text-gray-300 hover:text-white transition-all"
-              title="Real-Time Sensory Messages"
+              title="Sensory Chef Chat"
             >
               <MessageSquare className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -190,34 +117,51 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Auth Button or User Avatar */}
+          {/* Standard Authentication Header Flow */}
           {currentUser ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-card border border-border">
-                <div className="w-7 h-7 rounded-lg bg-neon-gradient text-white flex items-center justify-center font-bold text-xs">
-                  {currentUser.name.charAt(0)}
+              <div className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl bg-card border border-border">
+                <div className="w-7 h-7 rounded-lg bg-neon-gradient text-white flex items-center justify-center font-black text-xs shadow-neon">
+                  {currentUser.firstName ? currentUser.firstName.charAt(0) : currentUser.name?.charAt(0)}
                 </div>
                 <div className="text-left hidden sm:block">
-                  <p className="text-xs font-bold text-white line-clamp-1">{currentUser.name}</p>
-                  <p className="text-[10px] text-primary font-semibold uppercase">{role}</p>
+                  <p className="text-xs font-bold text-white leading-tight">
+                    {currentUser.firstName} {currentUser.lastName}
+                  </p>
+                  <p className="text-[10px] text-primary font-semibold uppercase">{currentUser.role}</p>
                 </div>
               </div>
+
+              {/* Log Out Button */}
               <button
                 onClick={logout}
-                className="p-2 rounded-xl bg-card border border-border hover:bg-red-500/20 hover:border-red-500/40 text-gray-400 hover:text-red-400 transition-all"
+                className="p-2 rounded-xl bg-card border border-border hover:bg-red-500/20 hover:border-red-500/40 text-gray-400 hover:text-red-400 transition-all flex items-center gap-1 text-xs font-bold"
                 title={t.logout}
               >
                 <LogOut className="w-4 h-4" />
+                <span className="hidden md:inline">{t.logout}</span>
               </button>
             </div>
           ) : (
-            <button
-              onClick={openAuthModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neon-gradient text-white text-xs font-bold shadow-neon hover:scale-105 active:scale-95 transition-all"
-            >
-              <UserIcon className="w-4 h-4" />
-              <span>{t.login}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Sign In Button */}
+              <button
+                onClick={() => openAuthModal('signin')}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface border border-border hover:border-primary/60 text-white text-xs font-bold transition-all"
+              >
+                <LogIn className="w-4 h-4 text-primary" />
+                <span>{t.signIn}</span>
+              </button>
+
+              {/* Sign Up Button */}
+              <button
+                onClick={() => openAuthModal('signup')}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neon-gradient text-white text-xs font-extrabold shadow-neon hover:scale-105 active:scale-95 transition-all"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>{t.signUp}</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

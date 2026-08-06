@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Spot } from '@/types';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useChatStore } from '@/store/useChatStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { X, Star, MapPin, Eye, ChefHat, MessageCircle, Calendar, ShieldCheck, Sparkles, Phone, Clock, Utensils } from 'lucide-react';
+import { X, Star, MapPin, Eye, ChefHat, MessageCircle, Clock, Utensils, Trash2, Award } from 'lucide-react';
 
 interface SpotDetailModalProps {
   spot: Spot | null;
@@ -12,54 +12,79 @@ interface SpotDetailModalProps {
 
 export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose }) => {
   const { openChatForSpot } = useChatStore();
-  const { language, role } = useAuthStore();
-  const { approveSpot } = useSpotStore();
+  const { language, currentUser, openAuthModal } = useAuthStore();
+  const { rateSpot, removeRating } = useSpotStore();
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
 
   if (!spot) return null;
+
+  const userRatingObj = spot.ratingsList?.find((r) => r.userId === currentUser?.id);
+  const currentUserRating = userRatingObj?.rating || null;
+
+  const handleStarClick = (starValue: number) => {
+    if (!currentUser) {
+      openAuthModal('signin');
+      return;
+    }
+    rateSpot(spot.id, currentUser.id, starValue);
+  };
+
+  const handleRemoveRating = () => {
+    if (!currentUser) return;
+    removeRating(spot.id, currentUser.id);
+  };
 
   const t = {
     EN: {
       tastingMenu: "Signature Sensory Tasting Menu",
-      reservation: "Request Reservation / Inquiry",
       chatChef: "Chat Directly with Chef & Host",
       openingHours: "Open Daily: 5:00 PM – 11:30 PM",
       location: "Location & Neighborhood",
-      reviews: "Gourmet Reviews & Ratings",
-      approveBtn: "Approve Spot (Admin Action)",
+      ratingTitle: "Rate this Sensory Spot",
+      yourRating: "Your Current Rating:",
+      removeRatingBtn: "Remove Rating (Bahoni o'chirish)",
+      signInToRate: "Sign in to rate this spot",
+      reviews: "Gourmet Reviews",
     },
     UZ: {
       tastingMenu: "Mualliflik Sensory Taomlar Menyusi",
-      reservation: "Stol Bron Qilish / So'rov",
       chatChef: "Oshpaz Bilan Muloqot Qilish",
       openingHours: "Har kuni ochiq: 17:00 – 23:30",
       location: "Manzil va Hudud",
+      ratingTitle: "Ushbu Restoranga Baho Bering",
+      yourRating: "Sizning Bahongiz:",
+      removeRatingBtn: "Bahoni o'chirish (Remove Rating)",
+      signInToRate: "Baho berish uchun tizimga kiring",
       reviews: "Gurmanlar Sharhlari",
-      approveBtn: "Maskanni Tasdiqlash (Admin)",
     },
     RU: {
       tastingMenu: "Дегустационное Меню Шефа",
-      reservation: "Забронировать Стол",
       chatChef: "Чат с Шефом и Хостес",
       openingHours: "Ежедневно: 17:00 – 23:30",
       location: "Локация и Адрес",
+      ratingTitle: "Оцените заведение",
+      yourRating: "Ваша текущая оценка:",
+      removeRatingBtn: "Удалить оценку (Bahoni o'chirish)",
+      signInToRate: "Войдите, чтобы поставить оценку",
       reviews: "Отзывы Гурманов",
-      approveBtn: "Одобрить Заведение (Админ)",
     },
     JP: {
       tastingMenu: "シグネチャーコースメニュー",
-      reservation: "ご予約・お問い合わせ",
       chatChef: "シェフとダイレクトチャット",
       openingHours: "営業時間: 17:00 – 23:30",
       location: "所在地",
+      ratingTitle: "スポットを評価する",
+      yourRating: "あなたの評価:",
+      removeRatingBtn: "評価を削除する",
+      signInToRate: "評価するにはログインしてください",
       reviews: "グルメレビュー",
-      approveBtn: "承認する（管理者行動）",
     }
   }[language];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
       <div className="relative w-full max-w-3xl max-h-[90vh] rounded-3xl bg-card border border-border p-6 sm:p-8 shadow-2xl overflow-y-auto space-y-6">
-        {/* Glow ambient background */}
+        {/* Ambient Glow */}
         <div className="absolute -top-24 -right-24 w-60 h-60 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
 
         {/* Close Button */}
@@ -70,46 +95,87 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
           <X className="w-5 h-5" />
         </button>
 
-        {/* Top Cover Image Banner */}
+        {/* Hero Banner */}
         <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden bg-surface border border-border shadow-inner">
           <img src={spot.coverImage} alt={spot.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-black/30 to-black/50" />
 
-          {/* Badges */}
           <div className="absolute top-4 left-4 flex items-center gap-2">
             <span className="px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/10 text-xs font-black text-white">
               {spot.category}
             </span>
-            {spot.isFeatured && (
-              <span className="px-3 py-1 rounded-full bg-neon-gradient text-white text-xs font-black shadow-neon flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> Featured Spot
-              </span>
-            )}
           </div>
 
           <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <div>
               <div className="flex items-center gap-2 text-yellow-400 text-sm font-black mb-1">
                 <Star className="w-4 h-4 fill-yellow-400" />
-                <span>{spot.rating || 4.9}</span>
-                <span className="text-xs text-gray-300 font-normal">({spot.reviewsCount || 120} Verified Gourmet Reviews)</span>
+                <span>⭐ {spot.rating || 4.8}</span>
+                <span className="text-xs text-gray-300 font-normal">({spot.reviewsCount || 215} {t.reviews})</span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight">{spot.title}</h2>
             </div>
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-border text-xs font-bold text-gray-300">
               <Eye className="w-4 h-4 text-primary" />
-              <span>{spot.viewsToday} views today</span>
+              <span>{spot.viewsToday} {t.viewsToday || 'views'}</span>
             </div>
           </div>
         </div>
 
-        {/* Content Body Grid */}
+        {/* Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left 2 columns: Details & Tasting Menu */}
+          {/* Details & Interactive Rating */}
           <div className="md:col-span-2 space-y-6">
             <div>
-              <h3 className="text-sm font-black text-gray-300 uppercase tracking-wider mb-2">Sensory Concept</h3>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Sensory Concept</h3>
               <p className="text-sm text-gray-300 leading-relaxed">{spot.description}</p>
+            </div>
+
+            {/* Interactive Rating Component */}
+            <div className="p-5 rounded-2xl bg-surface border border-border space-y-3">
+              <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Award className="w-4 h-4 text-yellow-400" />
+                <span>{t.ratingTitle}</span>
+              </h4>
+
+              {/* Star Rating Inputs */}
+              <div className="flex items-center gap-2 pt-1">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = (hoverRating !== null ? hoverRating >= star : (currentUserRating || 0) >= star);
+                  return (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      onClick={() => handleStarClick(star)}
+                      className="p-1 text-yellow-400 hover:scale-125 transition-transform focus:outline-none"
+                    >
+                      <Star className={`w-7 h-7 ${isFilled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}`} />
+                    </button>
+                  );
+                })}
+
+                {currentUserRating && (
+                  <span className="text-xs font-black text-yellow-400 ml-2">
+                    {t.yourRating} ⭐ {currentUserRating}/5
+                  </span>
+                )}
+              </div>
+
+              {/* Remove Rating Button (Bahoni o'chirish) */}
+              {currentUserRating ? (
+                <div className="pt-2">
+                  <button
+                    onClick={handleRemoveRating}
+                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500 hover:text-white text-red-400 text-xs font-extrabold transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{t.removeRatingBtn}</span>
+                  </button>
+                </div>
+              ) : !currentUser ? (
+                <p className="text-[11px] text-gray-500 font-medium">{t.signInToRate}</p>
+              ) : null}
             </div>
 
             {/* Signature Tasting Highlights */}
@@ -127,14 +193,10 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
                   <span className="text-primary font-bold">02.</span>
                   <span><strong>Vesuvian Volcanic Stone Pizza:</strong> San Marzano DOP, Bufala Mozzarella & 48hr fermented sourdough.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">03.</span>
-                  <span><strong>A5 Miyazaki Wagyu:</strong> Salt-block seared with Binchotan charcoal smoke infusion.</span>
-                </li>
               </ul>
             </div>
 
-            {/* Location & Operating Details */}
+            {/* Location */}
             <div className="space-y-2 text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
@@ -148,7 +210,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
             </div>
           </div>
 
-          {/* Right Column: Actions & Direct Host Chat */}
+          {/* Right Column: Direct Chef Chat */}
           <div className="space-y-4">
             <div className="p-5 rounded-2xl bg-surface border border-border space-y-4">
               <div className="flex items-center gap-3">
@@ -175,18 +237,6 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({ spot, onClose 
                 <MessageCircle className="w-4 h-4" />
                 <span>{t.chatChef}</span>
               </button>
-
-              {role === 'ADMIN' && spot.status === 'PENDING' && (
-                <button
-                  onClick={() => {
-                    approveSpot(spot.id);
-                    onClose();
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg transition-all"
-                >
-                  {t.approveBtn}
-                </button>
-              )}
             </div>
           </div>
         </div>

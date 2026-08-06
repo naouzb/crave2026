@@ -4,10 +4,20 @@ export type Language = 'EN' | 'UZ' | 'RU' | 'JP';
 
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  name?: string; // computed full name
   email: string;
   image?: string;
   role: Role;
+  createdAt: string;
+}
+
+export interface Rating {
+  id: string;
+  userId: string;
+  spotId: string;
+  rating: number; // 1 to 5
   createdAt: string;
 }
 
@@ -23,8 +33,9 @@ export interface Spot {
   isFeatured: boolean;
   status: SpotStatus;
   createdAt: string;
-  rating?: number;
-  reviewsCount?: number;
+  rating?: number; // average rating
+  reviewsCount?: number; // total ratings count
+  ratingsList?: Rating[];
   location?: string;
 }
 

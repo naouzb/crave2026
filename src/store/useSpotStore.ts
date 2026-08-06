@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Spot, SpotStatus } from '@/types';
+import { Spot, Rating } from '@/types';
 
 interface SpotState {
   spots: Spot[];
@@ -13,13 +13,15 @@ interface SpotState {
   addSpot: (spot: Omit<Spot, 'id' | 'createdAt' | 'viewsToday' | 'status'>) => void;
   approveSpot: (spotId: string) => void;
   incrementViews: (spotId: string) => void;
+  rateSpot: (spotId: string, userId: string, ratingValue: number) => void;
+  removeRating: (spotId: string, userId: string) => void;
 }
 
 const INITIAL_SPOTS: Spot[] = [
   {
     id: 'spot_1',
-    ownerId: 'usr_business_1',
-    ownerName: 'Chef Kenji',
+    ownerId: 'usr_1',
+    ownerName: 'Chef Kenji Takahashi',
     title: 'Miyabi Omakase & Edomae Sushi',
     category: 'Omakase & Sushi',
     description: 'Ultra-exclusive 12-seat Japanese omakase experience featuring wild-caught bluefin tuna imported daily from Toyosu Market, Tokyo.',
@@ -29,6 +31,9 @@ const INITIAL_SPOTS: Spot[] = [
     status: 'APPROVED',
     rating: 4.9,
     reviewsCount: 328,
+    ratingsList: [
+      { id: 'rat_1', userId: 'usr_2', spotId: 'spot_1', rating: 5, createdAt: new Date().toISOString() }
+    ],
     location: 'Ginza District / Downtown',
     createdAt: new Date().toISOString(),
   },
@@ -45,6 +50,7 @@ const INITIAL_SPOTS: Spot[] = [
     status: 'APPROVED',
     rating: 4.8,
     reviewsCount: 215,
+    ratingsList: [],
     location: 'Little Italy Quarter',
     createdAt: new Date().toISOString(),
   },
@@ -61,39 +67,8 @@ const INITIAL_SPOTS: Spot[] = [
     status: 'APPROVED',
     rating: 4.95,
     reviewsCount: 410,
+    ratingsList: [],
     location: 'Upper West Promenade',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'spot_4',
-    ownerId: 'usr_business_4',
-    ownerName: 'Chef Hiroshi',
-    title: 'Kuro Artisan Tonkotsu Ramen Lab',
-    category: 'Craft Ramen',
-    description: 'Simmered 24-hour pork bone collagen broth with hand-pulled black garlic rye noodles and charred slow-braised chashu belly.',
-    coverImage: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80',
-    viewsToday: 840,
-    isFeatured: false,
-    status: 'APPROVED',
-    rating: 4.7,
-    reviewsCount: 189,
-    location: 'East Financial Center',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'spot_5',
-    ownerId: 'usr_business_5',
-    ownerName: 'Elena Rostova',
-    title: 'Velvet Noir Pastry & Caviar Lounge',
-    category: 'Artisanal Pastry',
-    description: 'Hyper-sensory French patisserie with gold-leaf choux, Valrhona dark chocolate tartes, and premium Oscietra caviar champagne pairings.',
-    coverImage: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80',
-    viewsToday: 620,
-    isFeatured: false,
-    status: 'PENDING',
-    rating: 4.6,
-    reviewsCount: 94,
-    location: 'Grand Plaza Tower',
     createdAt: new Date().toISOString(),
   }
 ];
@@ -119,6 +94,7 @@ export const useSpotStore = create<SpotState>((set) => ({
       status: 'PENDING',
       rating: 5.0,
       reviewsCount: 1,
+      ratingsList: [],
     };
     return {
       spots: [newSpot, ...state.spots],
@@ -136,5 +112,50 @@ export const useSpotStore = create<SpotState>((set) => ({
     spots: state.spots.map((spot) =>
       spot.id === spotId ? { ...spot, viewsToday: spot.viewsToday + 1 } : spot
     ),
+  })),
+
+  rateSpot: (spotId: string, userId: string, ratingValue: number) => set((state) => ({
+    spots: state.spots.map((spot) => {
+      if (spot.id !== spotId) return spot;
+
+      const existingRatings = spot.ratingsList || [];
+      const filtered = existingRatings.filter((r) => r.userId !== userId);
+      const newRating: Rating = {
+        id: `rat_${Date.now()}`,
+        userId,
+        spotId,
+        rating: ratingValue,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedRatings = [newRating, ...filtered];
+      const sum = updatedRatings.reduce((acc, r) => acc + r.rating, 0);
+      const avg = Number((sum / updatedRatings.length).toFixed(1));
+
+      return {
+        ...spot,
+        ratingsList: updatedRatings,
+        rating: avg,
+        reviewsCount: (spot.reviewsCount || 100) + (filtered.length === existingRatings.length ? 1 : 0),
+      };
+    }),
+  })),
+
+  removeRating: (spotId: string, userId: string) => set((state) => ({
+    spots: state.spots.map((spot) => {
+      if (spot.id !== spotId) return spot;
+
+      const existingRatings = spot.ratingsList || [];
+      const updatedRatings = existingRatings.filter((r) => r.userId !== userId);
+      const sum = updatedRatings.reduce((acc, r) => acc + r.rating, 0);
+      const avg = updatedRatings.length > 0 ? Number((sum / updatedRatings.length).toFixed(1)) : 4.8;
+
+      return {
+        ...spot,
+        ratingsList: updatedRatings,
+        rating: avg,
+        reviewsCount: Math.max(0, (spot.reviewsCount || 1) - 1),
+      };
+    }),
   })),
 }));

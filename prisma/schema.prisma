@@ -21,7 +21,8 @@ enum SpotStatus {
 
 model User {
   id            String    @id @default(cuid())
-  name          String
+  firstName     String
+  lastName      String
   email         String    @unique
   passwordHash  String?
   image         String?
@@ -29,6 +30,7 @@ model User {
   spots         Spot[]    // Restaurants owned by Business
   messagesSent  Message[] @relation("SentMessages")
   messagesRecv  Message[] @relation("ReceivedMessages")
+  ratings       Rating[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -44,17 +46,30 @@ model Spot {
   viewsToday    Int        @default(0)
   isFeatured    Boolean    @default(false)
   status        SpotStatus @default(PENDING)
+  ratings       Rating[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
 
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotId    String
+  spot      Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  rating    Int      // 1 to 5 stars
+  createdAt DateTime @default(now())
+
+  @@unique([userId, spotId])
+}
+
 model Message {
-  id            String   @id @default(cuid())
-  senderId      String
-  sender        User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId    String
-  receiver      User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  content       String
-  isRead        Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }

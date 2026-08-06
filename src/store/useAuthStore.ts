@@ -4,62 +4,60 @@ import { Role, Language, User } from '@/types';
 interface AuthState {
   currentUser: User | null;
   usersList: User[];
-  role: Role;
   language: Language;
   isAuthModalOpen: boolean;
-  setRole: (role: Role) => void;
+  authModalMode: 'signin' | 'signup';
   setLanguage: (lang: Language) => void;
-  openAuthModal: () => void;
+  openAuthModal: (mode?: 'signin' | 'signup') => void;
   closeAuthModal: () => void;
-  registerUser: (name: string, email: string, role: Role) => User;
-  loginAs: (user: User) => void;
+  signUpUser: (firstName: string, lastName: string, email: string, role?: Role) => User;
+  signInUser: (email: string) => boolean;
   logout: () => void;
 }
 
 const INITIAL_USERS: User[] = [
   {
     id: 'usr_1',
-    name: 'Chef Kenji Takahashi',
+    firstName: 'Kenji',
+    lastName: 'Takahashi',
+    name: 'Kenji Takahashi',
     email: 'kenji@omakase.io',
     role: 'BUSINESS',
     createdAt: new Date().toISOString(),
   },
   {
     id: 'usr_2',
-    name: 'Alex Mercer (Foodie)',
+    firstName: 'Alex',
+    lastName: 'Mercer',
+    name: 'Alex Mercer',
     email: 'alex@foodie.com',
     role: 'CLIENT',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'usr_3',
-    name: 'Super Admin',
-    email: 'admin@crave2026.io',
-    role: 'ADMIN',
     createdAt: new Date().toISOString(),
   }
 ];
 
-export const useAuthStore = create<AuthState>((set) => ({
-  currentUser: INITIAL_USERS[0],
+export const useAuthStore = create<AuthState>((set, get) => ({
+  currentUser: INITIAL_USERS[1], // Default logged-in as Alex Mercer (Client)
   usersList: INITIAL_USERS,
-  role: 'BUSINESS',
   language: 'EN',
   isAuthModalOpen: false,
-
-  setRole: (role: Role) => set((state) => ({
-    role,
-    currentUser: state.currentUser ? { ...state.currentUser, role } : null
-  })),
+  authModalMode: 'signin',
 
   setLanguage: (language: Language) => set({ language }),
-  openAuthModal: () => set({ isAuthModalOpen: true }),
+
+  openAuthModal: (mode = 'signin') => set({
+    isAuthModalOpen: true,
+    authModalMode: mode,
+  }),
+
   closeAuthModal: () => set({ isAuthModalOpen: false }),
 
-  registerUser: (name: string, email: string, role: Role) => {
+  signUpUser: (firstName: string, lastName: string, email: string, role: Role = 'CLIENT') => {
     const newUser: User = {
       id: `usr_${Date.now()}`,
-      name,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`,
       email,
       role,
       createdAt: new Date().toISOString(),
@@ -68,21 +66,46 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => ({
       usersList: [newUser, ...state.usersList],
       currentUser: newUser,
-      role: newUser.role,
       isAuthModalOpen: false,
     }));
 
     return newUser;
   },
 
-  loginAs: (user: User) => set({
-    currentUser: user,
-    role: user.role,
-    isAuthModalOpen: false,
-  }),
+  signInUser: (email: string) => {
+    const users = get().usersList;
+    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+
+    if (existing) {
+      set({ currentUser: existing, isAuthModalOpen: false });
+      return true;
+    }
+
+    // Auto-create user for smooth demo experience
+    const nameParts = email.split('@')[0].split('.');
+    const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : 'Gourmet';
+    const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : 'User';
+
+    const newUser: User = {
+      id: `usr_${Date.now()}`,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`,
+      email,
+      role: 'CLIENT',
+      createdAt: new Date().toISOString(),
+    };
+
+    set((state) => ({
+      usersList: [newUser, ...state.usersList],
+      currentUser: newUser,
+      isAuthModalOpen: false,
+    }));
+
+    return true;
+  },
 
   logout: () => set({
     currentUser: null,
-    role: 'CLIENT',
   }),
 }));
